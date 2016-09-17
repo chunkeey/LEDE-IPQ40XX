@@ -1,0 +1,37 @@
+---
+ drivers/mtd/nand/plat_nand.c |   13 ++++++++++++-
+ include/linux/mtd/nand.h     |    1 +
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
+--- a/include/linux/mtd/nand.h
++++ b/include/linux/mtd/nand.h
+@@ -922,6 +922,7 @@ struct platform_nand_chip {
+ 	unsigned int options;
+ 	unsigned int bbt_options;
+ 	const char **part_probe_types;
++	int (*chip_fixup)(struct mtd_info *mtd);
+ };
+ 
+ /* Keep gcc happy */
+--- a/drivers/mtd/nand/plat_nand.c
++++ b/drivers/mtd/nand/plat_nand.c
+@@ -86,7 +86,18 @@ static int plat_nand_probe(struct platfo
+ 	}
+ 
+ 	/* Scan to find existence of the device */
+-	if (nand_scan(mtd, pdata->chip.nr_chips)) {
++	if (nand_scan_ident(mtd, pdata->chip.nr_chips, NULL)) {
++		err = -ENXIO;
++		goto out;
++	}
++
++	if (pdata->chip.chip_fixup) {
++		err = pdata->chip.chip_fixup(mtd);
++		if (err)
++			goto out;
++	}
++
++	if (nand_scan_tail(mtd)) {
+ 		err = -ENXIO;
+ 		goto out;
+ 	}
