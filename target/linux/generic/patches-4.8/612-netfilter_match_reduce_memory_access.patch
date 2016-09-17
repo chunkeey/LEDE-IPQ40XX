@@ -1,0 +1,16 @@
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -62,9 +62,11 @@ ip_packet_match(const struct iphdr *ip,
+ 		return true;
+ 
+ 	if (NF_INVF(ipinfo, IPT_INV_SRCIP,
+-		    (ip->saddr & ipinfo->smsk.s_addr) != ipinfo->src.s_addr) ||
++		    ipinfo->smsk.s_addr &&
++			(ip->saddr & ipinfo->smsk.s_addr) != ipinfo->src.s_addr) ||
+ 	    NF_INVF(ipinfo, IPT_INV_DSTIP,
+-		    (ip->daddr & ipinfo->dmsk.s_addr) != ipinfo->dst.s_addr))
++		    ipinfo->dmsk.s_addr &&
++			(ip->daddr & ipinfo->dmsk.s_addr) != ipinfo->dst.s_addr))
+ 		return false;
+ 
+ 	ret = ifname_compare_aligned(indev, ipinfo->iniface, ipinfo->iniface_mask);
