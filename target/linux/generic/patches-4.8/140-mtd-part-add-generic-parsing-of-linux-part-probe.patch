@@ -165,8 +165,8 @@ Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
  	int ret, err = 0;
 +	const char *const *types_of = NULL;
 +
-+	if (data && data->of_node) {
-+		types_of = of_get_probes(data->of_node);
++	if (data && mtd_get_of_node(master)) {
++		types_of = of_get_probes(mtd_get_of_node(master));
 +		if (types_of != NULL)
 +			types = types_of;
 +	}
