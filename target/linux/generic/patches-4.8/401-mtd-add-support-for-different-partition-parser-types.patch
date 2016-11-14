@@ -48,7 +48,7 @@ Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
  
 +int parse_mtd_partitions_by_type(struct mtd_info *master,
 +				 enum mtd_parser_type type,
-+				 struct mtd_partition **pparts,
++				 const struct mtd_partition **pparts,
 +				 struct mtd_part_parser_data *data)
 +{
 +	struct mtd_part_parser *prev = NULL;
@@ -64,7 +64,7 @@ Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
 +		ret = (*parser->parse_fn)(master, pparts, data);
 +
 +		if (ret > 0) {
-+			put_partition_parser(parser);
++			mtd_part_parser_put(parser);
 +			printk(KERN_NOTICE
 +			       "%d %s partitions found on MTD device %s\n",
 +			       ret, parser->name, master->name);
@@ -108,7 +108,7 @@ Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
  
 +int parse_mtd_partitions_by_type(struct mtd_info *master,
 +				 enum mtd_parser_type type,
-+				 struct mtd_partition **pparts,
++				 const struct mtd_partition **pparts,
 +				 struct mtd_part_parser_data *data);
 +
  #endif
