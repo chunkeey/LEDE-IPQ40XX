@@ -1,0 +1,28 @@
+From 600e6761bf205051f9063be6253f431710639b84 Mon Sep 17 00:00:00 2001
+From: Christian Lamparter <chunkeey@gmail.com>
+Date: Tue, 22 Nov 2016 00:29:03 +0100
+Subject: [PATCH] Revert "include/uapi/linux/if_tunnel.h: include linux/if.h,
+ linux/ip.h and linux/in6.h"
+
+This reverts commit 1fe8e0f074c77aa41aaa579345a9e675acbebfa9.
+---
+ include/uapi/linux/if_tunnel.h | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/include/uapi/linux/if_tunnel.h b/include/uapi/linux/if_tunnel.h
+index 92f3c86..aa3eb63 100644
+--- a/include/uapi/linux/if_tunnel.h
++++ b/include/uapi/linux/if_tunnel.h
+@@ -2,9 +2,6 @@
+ #define _UAPI_IF_TUNNEL_H_
+ 
+ #include <linux/types.h>
+-#include <linux/if.h>
+-#include <linux/ip.h>
+-#include <linux/in6.h>
+ #include <asm/byteorder.h>
+ 
+ 
+-- 
+2.10.2
+

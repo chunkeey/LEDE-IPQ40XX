@@ -83,7 +83,7 @@ struct tplink_fw_header {
 };
 
 static int mtdsplit_parse_tplink(struct mtd_info *master,
-				struct mtd_partition **pparts,
+				const struct mtd_partition **pparts,
 				struct mtd_part_parser_data *data)
 {
 	struct tplink_fw_header hdr;
