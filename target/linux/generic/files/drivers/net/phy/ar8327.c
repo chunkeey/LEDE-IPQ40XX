@@ -622,12 +622,11 @@ ar8327_hw_init(struct ar8xxx_priv *priv)
 	priv->chip_data = kzalloc(sizeof(struct ar8327_data), GFP_KERNEL);
 	if (!priv->chip_data)
 		return -ENOMEM;
-
-	if (priv->phy->dev.of_node)
-		ret = ar8327_hw_config_of(priv, priv->phy->dev.of_node);
+	if (priv->phy->mdio.dev.of_node)
+		ret = ar8327_hw_config_of(priv, priv->phy->mdio.dev.of_node);
 	else
 		ret = ar8327_hw_config_pdata(priv,
-					     priv->phy->dev.platform_data);
+					     priv->phy->mdio.dev.platform_data);
 
 	if (ret)
 		return ret;
