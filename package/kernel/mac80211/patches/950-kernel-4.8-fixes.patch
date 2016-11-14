@@ -1,0 +1,26 @@
+--- a/compat/Kconfig	2016-11-09 20:44:01.049929155 +0100
++++ b/compat/Kconfig	2016-11-09 20:44:16.186628780 +0100
+@@ -139,7 +139,7 @@ config BPAUTO_BUILD_WANT_DEV_COREDUMP
+ config BPAUTO_RHASHTABLE
+ 	bool
+ 	# current API of rhashtable was introduced in version 4.1
+-	depends on KERNEL_4_8
++	depends on KERNEL_4_9
+ 	# not very nice - but better than always having it
+ 	default y if MAC80211
+ 	#h-file linux/rhashtable.h
+--- a/backport-include/linux/cred.h	2016-11-23 00:21:48.953705915 +0100
++++ b/backport-include/linux/cred.h	2016-11-23 00:22:55.907177391 +0100
+@@ -3,8 +3,12 @@
+ #include_next <linux/cred.h>
+ #include <linux/version.h>
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0)
++
+ #ifndef current_user_ns
+ #define current_user_ns()	(current->nsproxy->user_ns)
+ #endif
+ 
++#endif
++
+ #endif /* __BACKPORT_LINUX_CRED_H */
