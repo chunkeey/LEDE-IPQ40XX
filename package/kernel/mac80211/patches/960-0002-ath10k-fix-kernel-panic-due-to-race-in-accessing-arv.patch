@@ -1,0 +1,81 @@
+From ebaa4b1620bf69f2bc43cb45ea85fbafdaec23c3 Mon Sep 17 00:00:00 2001
+From: Vasanthakumar Thiagarajan <vthiagar@qti.qualcomm.com>
+Date: Mon, 10 Oct 2016 19:51:18 +0530
+Subject: [PATCH 2/8] ath10k: fix kernel panic due to race in accessing arvif
+ list
+
+arvifs list is traversed within data_lock spin_lock in tasklet
+context to fill channel information from the corresponding vif.
+This means any access to arvifs list for add/del operations
+should also be protected with the same spin_lock to avoid the
+race. Fix this by performing list add/del on arvfis within the
+data_lock. This could fix kernel panic something like the below.
+
+ LR is at ath10k_htt_rx_pktlog_completion_handler+0x100/0xb6c [ath10k_core]
+ PC is at ath10k_htt_rx_pktlog_completion_handler+0x1c0/0xb6c [ath10k_core]
+ Internal error: Oops: 17 [#1] PREEMPT SMP ARM
+ [<bf4857f4>] (ath10k_htt_rx_pktlog_completion_handler+0x2f4/0xb6c [ath10k_core])
+ [<bf487540>] (ath10k_htt_txrx_compl_task+0x8b4/0x1188 [ath10k_core])
+ [<c00312d4>] (tasklet_action+0x8c/0xec)
+ [<c00309a8>] (__do_softirq+0xdc/0x208)
+ [<c0030d6c>] (irq_exit+0x84/0xe0)
+ [<c005db04>] (__handle_domain_irq+0x80/0xa0)
+ [<c00085c4>] (gic_handle_irq+0x38/0x5c)
+ [<c0009640>] (__irq_svc+0x40/0x74)
+
+(gdb) list *(ath10k_htt_rx_pktlog_completion_handler+0x1c0)
+0x136c0 is in ath10k_htt_rx_h_channel (drivers/net/wireless/ath/ath10k/htt_rx.c:769)
+764		struct cfg80211_chan_def def;
+765
+766		lockdep_assert_held(&ar->data_lock);
+767
+768		list_for_each_entry(arvif, &ar->arvifs, list) {
+769			if (arvif->vdev_id == vdev_id &&
+770			    ath10k_mac_vif_chan(arvif->vif, &def) == 0)
+771				return def.chan;
+772		}
+773
+
+Signed-off-by: Vasanthakumar Thiagarajan <vthiagar@qti.qualcomm.com>
+Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
+---
+ drivers/net/wireless/ath/ath10k/mac.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/net/wireless/ath/ath10k/mac.c b/drivers/net/wireless/ath/ath10k/mac.c
+index 2e5d2ca..691b7b5 100644
+--- a/drivers/net/wireless/ath/ath10k/mac.c
++++ b/drivers/net/wireless/ath/ath10k/mac.c
+@@ -4931,7 +4931,9 @@ static int ath10k_add_interface(struct ieee80211_hw *hw,
+ 	}
+ 
+ 	ar->free_vdev_map &= ~(1LL << arvif->vdev_id);
++	spin_lock_bh(&ar->data_lock);
+ 	list_add(&arvif->list, &ar->arvifs);
++	spin_unlock_bh(&ar->data_lock);
+ 
+ 	/* It makes no sense to have firmware do keepalives. mac80211 already
+ 	 * takes care of this with idle connection polling.
+@@ -5082,7 +5084,9 @@ static int ath10k_add_interface(struct ieee80211_hw *hw,
+ err_vdev_delete:
+ 	ath10k_wmi_vdev_delete(ar, arvif->vdev_id);
+ 	ar->free_vdev_map |= 1LL << arvif->vdev_id;
++	spin_lock_bh(&ar->data_lock);
+ 	list_del(&arvif->list);
++	spin_unlock_bh(&ar->data_lock);
+ 
+ err:
+ 	if (arvif->beacon_buf) {
+@@ -5128,7 +5132,9 @@ static void ath10k_remove_interface(struct ieee80211_hw *hw,
+ 			    arvif->vdev_id, ret);
+ 
+ 	ar->free_vdev_map |= 1LL << arvif->vdev_id;
++	spin_lock_bh(&ar->data_lock);
+ 	list_del(&arvif->list);
++	spin_unlock_bh(&ar->data_lock);
+ 
+ 	if (arvif->vdev_type == WMI_VDEV_TYPE_AP ||
+ 	    arvif->vdev_type == WMI_VDEV_TYPE_IBSS) {
+-- 
+2.10.2
+

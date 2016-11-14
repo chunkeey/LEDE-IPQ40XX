@@ -45,7 +45,7 @@
 +	if (!mtd_is_partition(mtd))
 +		return (struct mtd_info *)mtd;
 +
-+	return PART(mtd)->master;
++	return mtd_to_part(mtd)->master;
 +}
 +EXPORT_SYMBOL_GPL(mtdpart_get_master);
 +
@@ -54,7 +54,7 @@
 +	if (!mtd_is_partition(mtd))
 +		return 0;
 +
-+	return PART(mtd)->offset;
++	return mtd_to_part(mtd)->offset;
 +}
 +EXPORT_SYMBOL_GPL(mtdpart_get_offset);
 +

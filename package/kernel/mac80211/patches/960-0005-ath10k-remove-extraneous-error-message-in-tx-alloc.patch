@@ -1,0 +1,34 @@
+From f004e532a80a6368627e26503482508528e5c443 Mon Sep 17 00:00:00 2001
+From: Mohammed Shafi Shajakhan <mohammed@qti.qualcomm.com>
+Date: Wed, 9 Nov 2016 03:40:59 +0200
+Subject: [PATCH 6/8] ath10k: remove extraneous error message in tx alloc
+
+Remove extraneous error message in 'ath10k_htt_tx_alloc_cont_frag_desc'
+as the caller 'ath10k_htt_tx_alloc' already dumps a proper error
+message
+
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qti.qualcomm.com>
+Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
+---
+ drivers/net/wireless/ath/ath10k/htt_tx.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath10k/htt_tx.c b/drivers/net/wireless/ath/ath10k/htt_tx.c
+index ab2ee90..ccbc8c03 100644
+--- a/drivers/net/wireless/ath/ath10k/htt_tx.c
++++ b/drivers/net/wireless/ath/ath10k/htt_tx.c
+@@ -282,10 +282,8 @@ static int ath10k_htt_tx_alloc_cont_frag_desc(struct ath10k_htt *htt)
+ 	htt->frag_desc.vaddr = dma_alloc_coherent(ar->dev, size,
+ 						  &htt->frag_desc.paddr,
+ 						  GFP_KERNEL);
+-	if (!htt->frag_desc.vaddr) {
+-		ath10k_err(ar, "failed to alloc fragment desc memory\n");
++	if (!htt->frag_desc.vaddr)
+ 		return -ENOMEM;
+-	}
+ 
+ 	return 0;
+ }
+-- 
+2.10.2
+
