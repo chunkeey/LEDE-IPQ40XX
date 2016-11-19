@@ -1,0 +1,22 @@
+--- a/drivers/soc/qcom/Makefile	2016-11-17 15:53:45.840564652 +0100
++++ b/drivers/soc/qcom/Makefile	2016-11-17 15:58:31.437919394 +0100
+@@ -7,3 +7,4 @@ obj-$(CONFIG_QCOM_SMEM_STATE) += smem_st
+ obj-$(CONFIG_QCOM_SMP2P)	+= smp2p.o
+ obj-$(CONFIG_QCOM_SMSM)	+= smsm.o
+ obj-$(CONFIG_QCOM_WCNSS_CTRL) += wcnss_ctrl.o
++obj-$(CONFIG_QCOM_TCSR)	 += qcom_tcsr.o
+--- a/drivers/soc/qcom/Kconfig	2016-11-17 15:53:53.097248803 +0100
++++ b/drivers/soc/qcom/Kconfig	2016-11-17 15:57:58.837840853 +0100
+@@ -70,5 +70,12 @@ config QCOM_SMSM
+ 	  Say yes here to support the Qualcomm Shared Memory State Machine.
+ 	  The state machine is represented by bits in shared memory.
+ 
++config QCOM_TCSR
++	tristate "QCOM Top Control and Status Registers"
++	depends on ARCH_QCOM
++	help
++	  Say y here to enable TCSR support.  The TCSR provides control
++	  functions for various peripherals.
++
+ config QCOM_WCNSS_CTRL
+ 	tristate "Qualcomm WCNSS control driver"

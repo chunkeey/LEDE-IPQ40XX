@@ -1,0 +1,19 @@
+#!/bin/sh
+
+. /lib/functions/uci-defaults.sh
+. /lib/ipq40xx.sh
+. /lib/functions/system.sh
+
+board_config_update
+
+board=$(ipq40xx_board_name)
+
+case "$board" in
+*)
+	echo "Unsupported hardware. Network interfaces not intialized"
+	;;
+esac
+
+board_config_flush
+
+exit 0
