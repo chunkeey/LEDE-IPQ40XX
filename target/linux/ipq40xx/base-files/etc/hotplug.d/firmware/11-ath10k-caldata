@@ -1,0 +1,75 @@
+#!/bin/sh
+
+[ -e /lib/firmware/$FIRMWARE ] && exit 0
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+ath10k_die() {
+	echo "ath10k cal: " "$*"
+	exit 1
+}
+
+ath10k_from_file() {
+	local source=$1
+	local offset=$2
+	local count=$3
+
+	dd if=$source of=/lib/firmware/$FIRMWARE bs=1 skip=$offset count=$count 2>/dev/null || \
+		ath10kcal_die "failed to extract calibration data from $source"
+}
+
+ath10k_ubi_extract() {
+	local part=$1
+	local offset=$2
+	local count=$3
+	local ubidev=$(nand_find_ubi $CI_UBIPART)
+	local ubi
+
+	ubi=$(nand_find_volume $ubidev $part)
+	[ -n "$ubi" ] || \
+		ath10k_die "no UBI volume found for $part"
+
+	dd if=/dev/$ubi of=/lib/firmware/$FIRMWARE bs=1 skip=$offset count=$count 2>/dev/null || \
+		ath10k_die "failed to extract from $ubi"
+}
+
+ath10k_extract() {
+	local part=$1
+	local offset=$2
+	local count=$3
+	local mtd
+
+	mtd=$(find_mtd_chardev $part)
+	[ -n "$mtd" ] || \
+		ath10kcal_die "no mtd device found for partition $part"
+
+	dd if=$mtd of=/lib/firmware/$FIRMWARE bs=1 skip=$offset count=$count 2>/dev/null || \
+		ath10kcal_die "failed to extract calibration data from $mtd"
+}
+
+ath10k_patch_mac() {
+	local mac=$1
+
+	[ -z "$mac" ] && return
+
+	macaddr_2bin $mac | dd of=/lib/firmware/$FIRMWARE conv=notrunc bs=1 seek=6 count=6
+}
+
+. /lib/ipq40xx.sh
+
+board=$(ipq40xx_board_name)
+
+case "$FIRMWARE" in
+"ath10k/cal-ahb-a000000.wifi.bin")
+	case "$board" in
+	esac
+	;;
+"ath10k/cal-ahb-a800000.wifi.bin")
+	case "$board" in
+	esac
+	;;
+*)
+	exit 1
+	;;
+esac
