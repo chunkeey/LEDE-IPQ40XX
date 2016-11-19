@@ -1,0 +1,55 @@
+From e252ec973f896e3497b56a0cbe3cf8b9dfbad010 Mon Sep 17 00:00:00 2001
+From: Christian Lamparter <chunkeey@gmail.com>
+Date: Sat, 19 Nov 2016 00:58:18 +0100
+Subject: [PATCH] ARM: qcom: Add IPQ4019 SoC support
+
+Add support for the Qualcomm Atheros IPQ4019 SoC.
+
+Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
+---
+ arch/arm/Makefile          | 1 +
+ arch/arm/mach-qcom/Kconfig | 5 +++++
+ arch/arm/mach-qcom/board.c | 1 +
+ 3 files changed, 7 insertions(+)
+
+diff --git a/arch/arm/Makefile b/arch/arm/Makefile
+index 274e8a6..e64d809 100644
+--- a/arch/arm/Makefile
++++ b/arch/arm/Makefile
+@@ -149,6 +149,7 @@ textofs-$(CONFIG_SA1111) := 0x00208000
+ endif
+ textofs-$(CONFIG_ARCH_MSM8X60) := 0x00208000
+ textofs-$(CONFIG_ARCH_MSM8960) := 0x00208000
++textofs-$(CONFIG_ARCH_IPQ40XX) := 0x00208000
+ textofs-$(CONFIG_ARCH_AXXIA) := 0x00308000
+ 
+ # Machine directory name.  This list is sorted alphanumerically
+diff --git a/arch/arm/mach-qcom/Kconfig b/arch/arm/mach-qcom/Kconfig
+index 7349450..b2ae8a9 100644
+--- a/arch/arm/mach-qcom/Kconfig
++++ b/arch/arm/mach-qcom/Kconfig
+@@ -23,4 +23,9 @@ config ARCH_MSM8974
+ 	bool "Enable support for MSM8974"
+ 	select HAVE_ARM_ARCH_TIMER
+ 
++config ARCH_IPQ40XX
++	bool "Enable support for IPQ40XX"
++	select CLKSRC_QCOM
++	select HAVE_ARM_ARCH_TIMER
++
+ endif
+diff --git a/arch/arm/mach-qcom/board.c b/arch/arm/mach-qcom/board.c
+index 6d8bbf7..b52a6bc 100644
+--- a/arch/arm/mach-qcom/board.c
++++ b/arch/arm/mach-qcom/board.c
+@@ -18,6 +18,7 @@ static const char * const qcom_dt_match[] __initconst = {
+ 	"qcom,apq8064",
+ 	"qcom,apq8074-dragonboard",
+ 	"qcom,apq8084",
++	"qcom,ipq4019",
+ 	"qcom,ipq8062",
+ 	"qcom,ipq8064",
+ 	"qcom,msm8660-surf",
+-- 
+2.10.2
+
