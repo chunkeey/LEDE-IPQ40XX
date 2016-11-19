@@ -1,0 +1,24 @@
+#!/bin/sh
+
+. /lib/functions/uci-defaults.sh
+. /lib/ipq40xx.sh
+
+board_config_update
+
+board=$(ipq40xx_board_name)
+
+case "$board" in
+rt-ac58u)
+	ucidef_set_led_wlan "wlan2g" "WLAN2G" "$board:blue:wlan2G" "phy0radio"
+	ucidef_set_led_wlan "wlan5g" "WLAN5G" "$board:blue:wlan5G" "phy1radio"
+	ucidef_set_led_netdev "wan" "WAN" "$board:blue:wan" "eth1"
+	ucidef_set_led_usbport "usb" "USB" "${board}:blue:usb" "usb1-port1" "usb2-port1" "usb3-port1" "usb4-port1"
+	ucidef_set_led_switch "lan" "LAN" "${board}:blue:lan" "switch0" "0x1e"
+	;;
+*)
+	;;
+esac
+
+board_config_flush
+
+exit 0

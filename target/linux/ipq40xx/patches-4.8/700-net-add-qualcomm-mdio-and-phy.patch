@@ -1,0 +1,31 @@
+--- a/drivers/net/phy/Kconfig	2016-11-14 16:19:29.830550912 +0100
++++ b/drivers/net/phy/Kconfig	2016-11-14 16:20:06.600606540 +0100
+@@ -388,6 +388,20 @@ endif # RTL8366_SMI
+ 
+ source "drivers/net/phy/b53/Kconfig"
+ 
++config MDIO_IPQ40XX
++	tristate "Qualcomm Atheros ipq40xx MDIO interface"
++	depends on HAS_IOMEM && OF
++	---help---
++	  This driver supports the MDIO interface found in Qualcomm
++	  Atheros ipq40xx Soc chip.
++
++config AR40XX_PHY
++	tristate "Driver for Qualcomm Atheros IPQ40XX switches"
++	depends on HAS_IOMEM && OF
++	select SWCONFIG
++	---help---
++	   This is the driver for Qualcomm Atheros IPQ40XX ESS switches.
++
+ endif # PHYLIB
+ 
+ config MICREL_KS8995MA
+--- a/drivers/net/phy/Makefile	2016-11-14 16:19:15.870529792 +0100
++++ b/drivers/net/phy/Makefile	2016-11-14 16:19:22.197206031 +0100
+@@ -65,3 +65,5 @@ obj-$(CONFIG_MDIO_BCM_IPROC)	+= mdio-bcm
+ obj-$(CONFIG_INTEL_XWAY_PHY)	+= intel-xway.o
+ obj-$(CONFIG_MDIO_HISI_FEMAC)	+= mdio-hisi-femac.o
+ obj-$(CONFIG_MDIO_XGENE)	+= mdio-xgene.o
++obj-$(CONFIG_MDIO_IPQ40XX)	+= mdio-ipq40xx.o
++obj-$(CONFIG_AR40XX_PHY)	+= ar40xx.o

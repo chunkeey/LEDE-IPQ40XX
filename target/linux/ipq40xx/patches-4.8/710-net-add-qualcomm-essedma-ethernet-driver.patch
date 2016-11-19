@@ -1,0 +1,23 @@
+--- a/drivers/net/ethernet/qualcomm/Makefile	2016-11-14 16:14:37.946825821 +0100
++++ b/drivers/net/ethernet/qualcomm/Makefile	2016-11-14 16:15:48.616904092 +0100
+@@ -4,3 +4,4 @@
+ 
+ obj-$(CONFIG_QCA7000) += qcaspi.o
+ qcaspi-objs := qca_spi.o qca_framing.o qca_7k.o qca_debug.o
++obj-$(CONFIG_ESSEDMA) += essedma/
+--- a/drivers/net/ethernet/qualcomm/Kconfig	2016-11-14 16:14:28.560148758 +0100
++++ b/drivers/net/ethernet/qualcomm/Kconfig	2016-11-14 16:15:18.633537550 +0100
+@@ -24,4 +24,13 @@ config QCA7000
+ 	  To compile this driver as a module, choose M here. The module
+ 	  will be called qcaspi.
+ 
++config ESSEDMA
++	tristate "Qualcomm Atheros ESS Edma support"
++	---help---
++	  This driver supports ethernet edma adapter.
++	  Say Y to build this driver.
++
++	  To compile this driver as a module, choose M here. The module
++	  will be called essedma.ko.
++
+ endif # NET_VENDOR_QUALCOMM
