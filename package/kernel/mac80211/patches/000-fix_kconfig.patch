@@ -12,14 +12,3 @@
  mconf_LDFLAGS := $(shell ./lxdialog/check-lxdialog.sh -ldflags $(CC))
  mconf: CFLAGS += $(mconf_CFLAGS)
  
---- a/compat/Kconfig	2016-11-09 20:44:01.049929155 +0100
-+++ b/compat/Kconfig	2016-11-09 20:44:16.186628780 +0100
-@@ -139,7 +139,7 @@ config BPAUTO_BUILD_WANT_DEV_COREDUMP
- config BPAUTO_RHASHTABLE
- 	bool
- 	# current API of rhashtable was introduced in version 4.1
--	depends on KERNEL_4_8
-+	depends on KERNEL_4_9
- 	# not very nice - but better than always having it
- 	default y if MAC80211
- 	#h-file linux/rhashtable.h
