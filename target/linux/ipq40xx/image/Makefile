@@ -6,7 +6,6 @@ include $(INCLUDE_DIR)/image.mk
 UBIFS_OPTS = -m 2048 -e 124KiB -c 4096 -U -F
 
 KERNEL_LOADADDR := 0x80208000
-TARGET_FILESYSTEMS := cpiogz
 
 define Build/dtb
         $(call Image/BuildDTB,../dts/$(DEVICE_DTS).dts,$@.dtb,,--space $(DTB_SIZE))
@@ -33,13 +32,14 @@ endef
 
 # $(1): FIT used kernel compression
 # $(2): FIT used ramdisk compression
+# $(3): FIT used ramdisk file
 define Build/fit-ramdisk
 	# create FIT image with and without ramdisk
 	./mkits.sh \
 		-D $(DEVICE_NAME) -o $@.its -k $@ -d $@.dtb \
 		-C $(word 1,$(1)) -a $(KERNEL_LOADADDR) -A $(ARCH) -v $(LINUX_VERSION) \
 		-e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) \
-		$(if $(word 2,$(1)),-r $(KDIR)/root.cpiogz -z $(word 2,$(1)))
+		$(if $(word 3,$(1)),-r $(KDIR)/$(word 3,$(1)) -z $(if $(word 2,$(1)),none))
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv $@.new $@
 endef
@@ -54,14 +54,16 @@ define Device/RT-AC58U
 	BOARD_NAME := RT-AC58U
 	DEVICE_TITLE := Asus RT-AC58U
 	IMAGE_SIZE := 20439364
-	KERNEL := dtb | kernel-bin | lzma | ramdisk | fit-ramdisk lzma gzip
+	KERNEL := dtb | kernel-bin | lzma | ramdisk | fit-ramdisk lzma
 	KERNEL_INITRAMFS := dtb | kernel-bin | gzip | fit-ramdisk gzip
 #	Someone - in their infinite wisdom - decided to put the firmware
 #	version in front of the image name \03\00\00\04 => Version 3.0.0.4
-#	Since u-boot works with strings we need another fixup step to add
-#	a version
+#	Since u-boot works with strings we either need another fixup step
+#	to add a version... or we are very careful not to add '\0' into that
+#	string and call it a day.... Yeah, we do the latter!
+	UIMAGE_NAME:=$(shell echo -e '\03\01\01\01RT-AC58U')
 	IMAGES = factory.trx
-	IMAGE/factory.trx := append-kernel | uImage none
+	IMAGE/factory.trx := append-kernel | append-rootfs | uImage none
 endef
 
 TARGET_DEVICES += RT-AC58U

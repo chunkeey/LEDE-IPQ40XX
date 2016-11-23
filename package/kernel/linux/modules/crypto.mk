@@ -24,13 +24,20 @@ define KernelPackage/crypto-aead
   TITLE:=CryptoAPI AEAD support
   KCONFIG:= \
 	CONFIG_CRYPTO_AEAD \
-	CONFIG_CRYPTO_AEAD2 \
-	CONFIG_CRYPTO_HASH \
-	CONFIG_CRYPTO_NULL
-  FILES:=$(LINUX_DIR)/crypto/aead.ko \
-	 $(LINUX_DIR)/crypto/crypto_hash.ko \
-	 $(LINUX_DIR)/crypto/crypto_null.ko
-  AUTOLOAD:=$(call AutoLoad,09,crypto_null crypto_hash aead,1)
+	CONFIG_CRYPTO_AEAD2
+  FILES:=$(LINUX_DIR)/crypto/aead.ko
+  AUTOLOAD:=$(call AutoLoad,09,aead,1)
+  $(call AddDepends/crypto, +LINUX_4_4:kmod-crypto-null +LINUX_4_8:kmod-crypto-null)
+endef
+
+$(eval $(call KernelPackage,crypto-aead))
+
+
+define KernelPackage/crypto-hash
+  TITLE:=CryptoAPI hash support
+  KCONFIG:=CONFIG_CRYPTO_HASH
+  FILES:=$(LINUX_DIR)/crypto/crypto_hash.ko
+  AUTOLOAD:=$(call AutoLoad,02,crypto_hash,1)
   $(call AddDepends/crypto)
 endef
 
@@ -111,6 +118,20 @@ define KernelPackage/crypto-rng
 endef
 
 $(eval $(call KernelPackage,crypto-rng))
+
+
+define KernelPackage/crypto-iv
+  TITLE:=CryptoAPI initialization vectors
+  DEPENDS:=+kmod-crypto-manager +kmod-crypto-rng +kmod-crypto-wq @!LINUX_4_8
+  KCONFIG:= CONFIG_CRYPTO_BLKCIPHER2
+  FILES:= \
+	$(LINUX_DIR)/crypto/eseqiv.ko \
+	$(LINUX_DIR)/crypto/chainiv.ko
+  AUTOLOAD:=$(call AutoLoad,10,eseqiv chainiv)
+  $(call AddDepends/crypto)
+endef
+
+$(eval $(call KernelPackage,crypto-iv))
 
 
 define KernelPackage/crypto-echainiv
@@ -295,7 +316,7 @@ $(eval $(call KernelPackage,crypto-hw-omap))
 
 define KernelPackage/crypto-authenc
   TITLE:=Combined mode wrapper for IPsec
-  DEPENDS:=+kmod-crypto-manager +kmod-crypto-aead
+  DEPENDS:=+kmod-crypto-manager +LINUX_4_4:kmod-crypto-null +LINUX_4_8:kmod-crypto-null
   KCONFIG:=CONFIG_CRYPTO_AUTHENC
   FILES:=$(LINUX_DIR)/crypto/authenc.ko
   AUTOLOAD:=$(call AutoLoad,09,authenc)
@@ -317,7 +338,7 @@ $(eval $(call KernelPackage,crypto-cbc))
 
 define KernelPackage/crypto-ctr
   TITLE:=Counter Mode CryptoAPI module
-  DEPENDS:=+kmod-crypto-manager +kmod-crypto-seqiv +kmod-crypto-seqiv
+  DEPENDS:=+kmod-crypto-manager +kmod-crypto-seqiv @!LINUX_4_8:+kmod-crypto-iv
   KCONFIG:=CONFIG_CRYPTO_CTR
   FILES:=$(LINUX_DIR)/crypto/ctr.ko
   AUTOLOAD:=$(call AutoLoad,09,ctr)
@@ -642,7 +663,7 @@ endef
 
 $(eval $(call KernelPackage,crypto-mv-cesa))
 
-define KernelPackage/crypto-qce
+define KernelPackage/crypto-hw-qce
   TITLE:= Qualcomm crypto engine accelerator
   DEPENDS:=+kmod-crypto-manager +kmod-crypto-hmac +kmod-crypto-sha1 \
 	   +kmod-crypto-sha256 +kmod-crypto-ecb +kmod-crypto-cbc \
@@ -654,4 +675,4 @@ define KernelPackage/crypto-qce
   $(call AddDepends/crypto)
 endef
 
-$(eval $(call KernelPackage,crypto-qce))
+$(eval $(call KernelPackage,crypto-hw-qce))

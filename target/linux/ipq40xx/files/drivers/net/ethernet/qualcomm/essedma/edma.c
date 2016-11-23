@@ -684,9 +684,9 @@ static void edma_rx_complete(struct edma_common_info *edma_cinfo,
 				/* single or fraglist skb */
 
 				/* Addition of 16 bytes is required, as in the packet
-			 	 * first 16 bytes are rrd descriptors, so actual data
-			 	 * starts from an offset of 16.
-			 	 */
+				 * first 16 bytes are rrd descriptors, so actual data
+				 * starts from an offset of 16.
+				 */
 				skb_reserve(skb, 16);
 				if (likely((num_rfds <= 1) || !edma_cinfo->fraglist_mode)) {
 					skb_put(skb, length);
@@ -784,8 +784,8 @@ static int edma_delete_rfs_filter(struct edma_adapter *adapter,
  *	Add RFS filter to switch
  */
 static int edma_add_rfs_filter(struct edma_adapter *adapter,
-		   	      struct flow_keys *keys, u16 rq,
-		    	      struct edma_rfs_filter_node *filter_node)
+			       struct flow_keys *keys, u16 rq,
+			       struct edma_rfs_filter_node *filter_node)
 {
 	int res = -1;
 
@@ -1058,7 +1058,7 @@ static void edma_rollback_tx(struct edma_adapter *adapter,
 static int edma_tx_map_and_fill(struct edma_common_info *edma_cinfo,
 			       struct edma_adapter *adapter, struct sk_buff *skb, int queue_id,
 			       unsigned int flags_transmit, u16 from_cpu, u16 dp_bitmap,
-		 	       bool packet_is_rstp, int nr_frags)
+			       bool packet_is_rstp, int nr_frags)
 {
 	struct edma_sw_desc *sw_desc = NULL;
 	struct platform_device *pdev = edma_cinfo->pdev;
@@ -1462,7 +1462,7 @@ void edma_flow_may_expire(unsigned long data)
  *	Called by core to to steer the flow to CPU
  */
 int edma_rx_flow_steer(struct net_device *dev, const struct sk_buff *skb,
-	   	      u16 rxq, u32 flow_id)
+		       u16 rxq, u32 flow_id)
 {
 	struct flow_keys keys;
 	struct edma_rfs_filter_node *filter_node;
