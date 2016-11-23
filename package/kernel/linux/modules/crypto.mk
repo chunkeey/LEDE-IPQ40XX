@@ -605,3 +605,18 @@ define KernelPackage/crypto-xts
 endef
 
 $(eval $(call KernelPackage,crypto-xts))
+
+
+define KernelPackage/crypto-hw-qce
+  TITLE:= Qualcomm crypto engine accelerator
+  DEPENDS:=+kmod-crypto-manager +kmod-crypto-hmac +kmod-crypto-sha1 \
+	   +kmod-crypto-sha256 +kmod-crypto-ecb +kmod-crypto-cbc \
+	   +kmod-crypto-ctr +kmod-crypto-des +kmod-crypto-xts +kmod-crypto-seqiv \
+	   @TARGET_ipq806x||TARGET_ipq40xx
+  KCONFIG:=CONFIG_CRYPTO_DEV_QCE
+  FILES:=$(LINUX_DIR)/drivers/crypto/qce/qcrypto.ko
+  AUTOLOAD:=$(call AutoLoad,09,qcrypto)
+  $(call AddDepends/crypto)
+endef
+
+$(eval $(call KernelPackage,crypto-hw-qce))
