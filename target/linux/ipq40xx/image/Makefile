@@ -44,4 +44,29 @@ define Build/fit-ramdisk
 	@mv $@.new $@
 endef
 
+
+define Device/RT-AC58U
+	$(call Device/FitImage)
+	DEVICE_DTS := qcom-ipq4019-rt-ac58u
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DTB_SIZE := 65536
+	BOARD_NAME := RT-AC58U
+	DEVICE_TITLE := Asus RT-AC58U
+	IMAGE_SIZE := 20439364
+	KERNEL := dtb | kernel-bin | lzma | ramdisk | fit-ramdisk lzma
+	KERNEL_INITRAMFS := dtb | kernel-bin | gzip | fit-ramdisk gzip
+#	Someone - in their infinite wisdom - decided to put the firmware
+#	version in front of the image name \03\00\00\04 => Version 3.0.0.4
+#	Since u-boot works with strings we either need another fixup step
+#	to add a version... or we are very careful not to add '\0' into that
+#	string and call it a day.... Yeah, we do the latter!
+#	UIMAGE_NAME:='\\3\\1\\1\\1RT-AC58U'
+	UIMAGE_NAME:=$(shell echo -e '\03\01\01\01RT-AC58U')
+	IMAGES = factory.trx
+	IMAGE/factory.trx := append-kernel | append-rootfs | uImage none
+endef
+
+TARGET_DEVICES += RT-AC58U
+
 $(eval $(call BuildImage))

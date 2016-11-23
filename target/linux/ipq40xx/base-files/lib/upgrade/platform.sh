@@ -10,6 +10,8 @@ platform_pre_upgrade() {
 	local board=$(ipq40xx_board_name)
 
 	case "$board" in
+	rt-ac58u)
+		nand_do_upgrade "$1"
 		;;
 	esac
 }
