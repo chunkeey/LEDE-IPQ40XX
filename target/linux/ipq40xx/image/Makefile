@@ -47,4 +47,33 @@ define Build/fit-ramdisk
 	@mv $@.new $@
 endef
 
+define Build/copy-file
+        cat "$(1)" > "$@"
+endef
+
+
+define Device/RT-AC58U
+	DEVICE_DTS := rt-ac58u
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DTB_SIZE := 65536
+	BOARD_NAME := rt-ac58u
+	DEVICE_TITLE := Asus RT-AC58U
+	IMAGE_SIZE := 20439364
+	KERNEL := dtb | kernel-bin | lzma | ramdisk | fit-ramdisk lzma
+	KERNEL_INITRAMFS := dtb | kernel-bin | gzip | fit-ramdisk gzip
+#	Someone - in their infinite wisdom - decided to put the firmware
+#	version in front of the image name \03\00\00\04 => Version 3.0.0.4
+#	Since u-boot works with strings we either need another fixup step
+#	to add a version... or we are very careful not to add '\0' into that
+#	string and call it a day.... Yeah, we do the latter!
+	UIMAGE_NAME:=$(shell echo -e '\03\01\01\01RT-AC58U')
+	IMAGES = sysupgrade.tar flash-factory.trx
+	IMAGE/flash-factory.trx := copy-file $(KDIR)/tmp/$$(KERNEL_INITRAMFS_IMAGE) | uImage none
+	IMAGE/sysupgrade.tar := sysupgrade-tar | append-metadata
+	DEVICE_PACKAGES := wifi-board-rt-ac58u
+endef
+
+TARGET_DEVICES += RT-AC58U
+
 $(eval $(call BuildImage))

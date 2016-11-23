@@ -12,7 +12,7 @@ endef
 define Build/Compile
 endef
 
-ALLWIFIBOARDS:=
+ALLWIFIBOARDS:=rt-ac58u
 ALLWIFIPACKAGES:=$(foreach BOARD,$(ALLWIFIBOARDS),wifi-board-$(BOARD))
 
 define Package/wifi-board-default
@@ -46,5 +46,7 @@ Don't install it for any other device!
 
   PREV_BOARD+=wifi-board-$(1)
 endef
+
+$(eval $(call generate-wifi-board-package,rt-ac58u,board-rt-ac58u.bin,ASUS RT-AC58U/RT-ACRH13))
 
 $(foreach PACKAGE,$(ALLWIFIPACKAGES),$(eval $(call BuildPackage,$(PACKAGE))))
