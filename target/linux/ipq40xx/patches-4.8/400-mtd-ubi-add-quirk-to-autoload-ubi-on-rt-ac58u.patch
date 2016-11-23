@@ -1,0 +1,12 @@
+--- a/drivers/mtd/ubi/build.c	2016-11-15 20:52:07.066642506 +0100
++++ b/drivers/mtd/ubi/build.c	2016-11-15 20:52:43.330053895 +0100
+@@ -1226,6 +1226,9 @@ static void __init ubi_auto_attach(void)
+ 	mtd = open_mtd_device("ubi");
+ 	if (IS_ERR(mtd))
+ 		mtd = open_mtd_device("data");
++	/* Hack for the Asus RT-AC58U */
++	if (IS_ERR(mtd))
++		mtd = open_mtd_device("UBI_DEV");
+ 
+ 	if (!IS_ERR(mtd)) {
+ 		size_t len;
