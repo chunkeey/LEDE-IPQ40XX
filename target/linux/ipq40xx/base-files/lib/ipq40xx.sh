@@ -10,6 +10,8 @@ ipq40xx_board_detect() {
 	machine=$(cat /proc/device-tree/model)
 
 	case "$machine" in
+	*"Asus RT-AC58U")
+		name="rt-ac58u"
 		;;
 	esac
 
