@@ -16,7 +16,7 @@ KERNELNAME:=Image dtbs
 
 include $(INCLUDE_DIR)/target.mk
 DEFAULT_PACKAGES += \
-	kmod-leds-gpio kmod-gpio-button-hotplug swconfig \
+	kmod-leds-gpio kmod-gpio-button-hotplug swconfig kmod-crypto-qce \
 	kmod-usb-core kmod-usb3 kmod-usb-dwc3 kmod-usb-dwc3-of-simple \
 	kmod-usb-phy-qcom-ipq4019 kmod-usb-ledtrig-usbport \
 	kmod-ath10k ath10k-firmware-qca4019 wpad-mini uboot-envtools
