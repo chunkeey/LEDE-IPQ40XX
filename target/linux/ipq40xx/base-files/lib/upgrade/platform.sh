@@ -11,6 +11,8 @@ platform_pre_upgrade() {
 
 	case "$board" in
 	rt-ac58u)
+		CI_UBIPART="UBI_DEV"
+		CI_KERNPART="linux"
 		nand_do_upgrade "$1"
 		;;
 	esac
@@ -18,10 +20,23 @@ platform_pre_upgrade() {
 
 platform_do_upgrade() {
 	local board=$(ipq40xx_board_name)
+
+	case "$board" in
+	*)
+		default_do_upgrade "$ARGV"
+		;;
+	esac
 }
 
 platform_nand_pre_upgrade() {
 	local board=$(ipq40xx_board_name)
+
+	case "$board" in
+	rt-ac58u)
+		CI_UBIPART="UBI_DEV"
+		CI_KERNPART="linux"
+		;;
+	esac
 }
 
 blink_led() {
