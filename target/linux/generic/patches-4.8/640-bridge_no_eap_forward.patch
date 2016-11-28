@@ -8,15 +8,14 @@ each other via bridges.
 ---
 --- a/net/bridge/br_input.c
 +++ b/net/bridge/br_input.c
-@@ -164,7 +164,11 @@ int br_handle_frame_finish(struct net *n
+@@ -164,7 +164,10 @@ int br_handle_frame_finish(struct net *n
  	if (IS_ENABLED(CONFIG_INET) && skb->protocol == htons(ETH_P_ARP))
  		br_do_proxy_arp(skb, br, vid, p);
  
 -	if (is_broadcast_ether_addr(dest)) {
 +	if (skb->protocol == htons(ETH_P_PAE)) {
-+		local_rcv = true;
 +		/* Do not forward 802.1x/EAP frames */
-+		skb = NULL;
++		local_rcv = true;
 +	} else if (is_broadcast_ether_addr(dest)) {
  		local_rcv = true;
  		unicast = false;

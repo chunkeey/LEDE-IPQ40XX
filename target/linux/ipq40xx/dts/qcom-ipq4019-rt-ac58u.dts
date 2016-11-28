@@ -32,9 +32,6 @@
 		led-failsafe = &power;
 		led-running = &power;
 		led-upgrade = &power;
-
-		ethernet0 = &gmac0;
-		ethernet1 = &gmac1;
 	};
 
 	reserved-memory {
