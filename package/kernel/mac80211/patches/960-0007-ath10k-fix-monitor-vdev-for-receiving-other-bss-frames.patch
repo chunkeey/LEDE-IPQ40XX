@@ -1,0 +1,67 @@
+From: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Subject: [PATCH] ath10k: fix monitor vdev for receiving other bss frames
+Date: Fri, 18 Nov 2016 15:10:58 -0800
+Message-ID: <1479510658-8326-1-git-send-email-rmanohar@qca.qualcomm.com>
+
+In order to receive other BSS entries in mesh mode, Monitor vdev
+is created whenever filter flag is set with OTHER_BSS. Recently
+it is root caused that setting promisc filter for Mesh interface
+is causing performance and stability issues. To fix this issue,
+firmware will configure appropriate rxfilters by default for mesh
+vdev during vdev creation. This change fixes monitor vdev creation
+based on firmware IE
+
+Signed-off-by: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+---
+ drivers/net/wireless/ath/ath10k/core.c | 1 +
+ drivers/net/wireless/ath/ath10k/core.h | 7 +++++++
+ drivers/net/wireless/ath/ath10k/mac.c  | 4 +++-
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/ath10k/core.c b/drivers/net/wireless/ath/ath10k/core.c
+index 7005e2a98726..b796be1d6318 100644
+--- a/drivers/net/wireless/ath/ath10k/core.c
++++ b/drivers/net/wireless/ath/ath10k/core.c
+@@ -326,6 +326,7 @@
+ 	[ATH10K_FW_FEATURE_PEER_FLOW_CONTROL] = "peer-flow-ctrl",
+ 	[ATH10K_FW_FEATURE_BTCOEX_PARAM] = "btcoex-param",
+ 	[ATH10K_FW_FEATURE_SKIP_NULL_FUNC_WAR] = "skip-null-func-war",
++	[ATH10K_FW_FEATURE_ALLOWS_MESH_BCAST] = "allows-mesh-bcast",
+ };
+ 
+ static unsigned int ath10k_core_get_fw_feature_str(char *buf,
+diff --git a/drivers/net/wireless/ath/ath10k/core.h b/drivers/net/wireless/ath/ath10k/core.h
+index e8decfaba5b6..179e52fbad55 100644
+--- a/drivers/net/wireless/ath/ath10k/core.h
++++ b/drivers/net/wireless/ath/ath10k/core.h
+@@ -562,6 +562,13 @@ enum ath10k_fw_features {
+ 	 */
+ 	ATH10K_FW_FEATURE_SKIP_NULL_FUNC_WAR = 15,
+ 
++	/* Firmware allow other BSS mesh broadcast/multicast frames without
++	 * creating monitor interface. Appropriate rxfilters are programmed for
++	 * mesh vdev by firmware itself. This feature flags will be used for
++	 * not creating monitor vdev while configuring mesh node.
++	 */
++	ATH10K_FW_FEATURE_ALLOWS_MESH_BCAST = 16,
++
+ 	/* keep last */
+ 	ATH10K_FW_FEATURE_COUNT,
+ };
+diff --git a/drivers/net/wireless/ath/ath10k/mac.c b/drivers/net/wireless/ath/ath10k/mac.c
+index 717b2fad9a8a..56b8859d4a72 100644
+--- a/drivers/net/wireless/ath/ath10k/mac.c
++++ b/drivers/net/wireless/ath/ath10k/mac.c
+@@ -1167,7 +1167,9 @@ static bool ath10k_mac_monitor_vdev_is_needed(struct ath10k *ar)
+ 		return false;
+ 
+ 	return ar->monitor ||
+-	       ar->filter_flags & FIF_OTHER_BSS ||
++	       (!test_bit(ATH10K_FW_FEATURE_ALLOWS_MESH_BCAST,
++			  ar->running_fw->fw_file.fw_features) &&
++		(ar->filter_flags & FIF_OTHER_BSS)) ||
+ 	       test_bit(ATH10K_CAC_RUNNING, &ar->dev_flags);
+ }
+ 
+-- 
+1.9.1
