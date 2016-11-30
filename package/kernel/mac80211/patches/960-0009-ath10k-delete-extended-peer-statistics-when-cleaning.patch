@@ -1,0 +1,49 @@
+From 8e84772cd5f102d345b703b20a86d7a634ebf6ea Mon Sep 17 00:00:00 2001
+From: Christian Lamparter <chunkeey@googlemail.com>
+Date: Thu, 1 Dec 2016 18:21:58 +0100
+Subject: [PATCH] ath10k: delete extended peer statistics when cleaning up
+
+This patch fixes a oom which was triggered by the current
+IPQ4019 firmware (firmware-5.bin_10.4-3.2.1-00047).
+
+During operation (in AP mode), the extended peer statistics
+piled simply up until the system ran out of ram (or the
+interface was brought down, which flushed the extended
+statistics list).
+
+Fixes: 4a49ae94a448faa ("ath10k: fix 10.4 extended peer stats update")
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+---
+ drivers/net/wireless/ath/ath10k/debug.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath10k/debug.c b/drivers/net/wireless/ath/ath10k/debug.c
+index 82a4c67..4acd9eb 100644
+--- a/drivers/net/wireless/ath/ath10k/debug.c
++++ b/drivers/net/wireless/ath/ath10k/debug.c
+@@ -399,6 +399,7 @@ void ath10k_debug_fw_stats_process(struct ath10k *ar, struct sk_buff *skb)
+ 			 * prevent firmware from DoS-ing the host.
+ 			 */
+ 			ath10k_fw_stats_peers_free(&ar->debug.fw_stats.peers);
++			ath10k_fw_extd_stats_peers_free(&ar->debug.fw_stats.peers_extd);
+ 			ath10k_warn(ar, "dropping fw peer stats\n");
+ 			goto free;
+ 		}
+@@ -409,10 +410,12 @@ void ath10k_debug_fw_stats_process(struct ath10k *ar, struct sk_buff *skb)
+ 			goto free;
+ 		}
+ 
++		if (!list_empty(&stats.peers))
++			list_splice_tail_init(&stats.peers_extd,
++					      &ar->debug.fw_stats.peers_extd);
++
+ 		list_splice_tail_init(&stats.peers, &ar->debug.fw_stats.peers);
+ 		list_splice_tail_init(&stats.vdevs, &ar->debug.fw_stats.vdevs);
+-		list_splice_tail_init(&stats.peers_extd,
+-				      &ar->debug.fw_stats.peers_extd);
+ 	}
+ 
+ 	complete(&ar->debug.fw_stats_complete);
+-- 
+2.10.2
+
