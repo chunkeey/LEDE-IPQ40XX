@@ -7,7 +7,8 @@
 
 ARCH:=arm
 BOARDNAME:=layerscape 32b boards
-CPU_TYPE:=cortex-a9
+CPU_TYPE:=cortex-a53
+CPU_SUBTYPE:=neon-vfpv4
 
 define Target/Description
 	Build firmware images for $(BOARDNAME) SoC devices.
