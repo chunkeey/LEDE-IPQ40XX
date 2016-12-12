@@ -1170,8 +1170,8 @@ static int edma_axi_remove(struct platform_device *pdev)
 	edma_write_reg(EDMA_REG_TX_ISR, 0xffff);
 #ifdef CONFIG_RFS_ACCEL
 	for (i = 0; i < edma_cinfo->num_gmac; i++) {
-		free_irq_cpu_rmap(edma_netdev[0]->rx_cpu_rmap);
-		edma_netdev[0]->rx_cpu_rmap = NULL;
+		free_irq_cpu_rmap(edma_netdev[i]->rx_cpu_rmap);
+		edma_netdev[i]->rx_cpu_rmap = NULL;
 	}
 #endif
 

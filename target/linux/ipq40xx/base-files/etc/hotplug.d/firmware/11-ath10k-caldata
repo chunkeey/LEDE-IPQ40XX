@@ -61,23 +61,23 @@ ath10k_patch_mac() {
 board=$(ipq40xx_board_name)
 
 case "$FIRMWARE" in
-"ath10k/cal-ahb-a000000.wifi.bin")
+"ath10k/pre-cal-ahb-a000000.wifi.bin")
 	case "$board" in
 	rt-ac58u)
 		. /lib/upgrade/nand.sh
 
 		CI_UBIPART=UBI_DEV
-		ath10k_ubi_extract "Factory" 4096 16016
+		ath10k_ubi_extract "Factory" 4096 12064
 		;;
 	esac
 	;;
-"ath10k/cal-ahb-a800000.wifi.bin")
+"ath10k/pre-cal-ahb-a800000.wifi.bin")
 	case "$board" in
 	rt-ac58u)
 		. /lib/upgrade/nand.sh
 
 		CI_UBIPART=UBI_DEV
-		ath10k_ubi_extract "Factory" 20480 16016
+		ath10k_ubi_extract "Factory" 20480 12064
 		;;
 	esac
 	;;

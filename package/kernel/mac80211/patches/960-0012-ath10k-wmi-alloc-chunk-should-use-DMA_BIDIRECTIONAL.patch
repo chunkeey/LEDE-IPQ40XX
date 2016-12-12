@@ -1,0 +1,46 @@
+From 43ca92d380a85996429601f0d337cbd58b4e5bf9 Mon Sep 17 00:00:00 2001
+From: Ben Greear <greearb@candelatech.com>
+Date: Tue, 29 Nov 2016 14:00:28 -0800
+Subject: [PATCH] ath10k: wmi-alloc-chunk should use DMA_BIDIRECTIONAL
+
+These memory chunks are often used as 'swap' by the NIC,
+so it will be both reading and writing to these areas.
+
+This seems to fix errors like this on my x86-64 machine:
+
+kernel: DMAR: DMAR:[DMA Write] Request device [05:00.0] fault addr ff5de000
+        DMAR:[fault reason 05] PTE Write access is not set
+
+Tested-by: Marek Behun <kabel@blackhole.sk>
+Signed-off-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
+---
+ drivers/net/wireless/ath/ath10k/wmi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/ath/ath10k/wmi.c b/drivers/net/wireless/ath/ath10k/wmi.c
+index 95be2ba311fc..c893314a191f 100644
+--- a/drivers/net/wireless/ath/ath10k/wmi.c
++++ b/drivers/net/wireless/ath/ath10k/wmi.c
+@@ -4487,7 +4487,7 @@ static int ath10k_wmi_alloc_chunk(struct ath10k *ar, u32 req_id,
+ 	if (!num_units)
+ 		return -ENOMEM;
+ 
+-	paddr = dma_map_single(ar->dev, vaddr, pool_size, DMA_TO_DEVICE);
++	paddr = dma_map_single(ar->dev, vaddr, pool_size, DMA_BIDIRECTIONAL);
+ 	if (dma_mapping_error(ar->dev, paddr)) {
+ 		kfree(vaddr);
+ 		return -ENOMEM;
+@@ -8473,7 +8473,7 @@ void ath10k_wmi_free_host_mem(struct ath10k *ar)
+ 		dma_unmap_single(ar->dev,
+ 				 ar->wmi.mem_chunks[i].paddr,
+ 				 ar->wmi.mem_chunks[i].len,
+-				 DMA_TO_DEVICE);
++				 DMA_BIDIRECTIONAL);
+ 		kfree(ar->wmi.mem_chunks[i].vaddr);
+ 	}
+ 
+-- 
+
+2.11.0
+

@@ -88,8 +88,8 @@
 
 /* TX/RX descriptor ring count */
 /* should be a power of 2 */
-#define EDMA_RX_RING_SIZE 512
-#define EDMA_TX_RING_SIZE 512
+#define EDMA_RX_RING_SIZE 128
+#define EDMA_TX_RING_SIZE 128
 
 /* Flags used in paged/non paged mode */
 #define EDMA_RX_HEAD_BUFF_SIZE_JUMBO 256

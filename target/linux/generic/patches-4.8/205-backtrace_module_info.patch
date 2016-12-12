@@ -25,7 +25,7 @@
 +	mod = __module_address(value);
 +	if (mod)
 +		snprintf(sym + len, sizeof(sym) - len, " [%s@%p+0x%x]",
-+			 mod->name, mod->module_core, mod->core_size);
++			 mod->name, mod->core_layout.base, mod->core_layout.size);
  #endif
 +	return string(buf, end, sym, spec);
  }

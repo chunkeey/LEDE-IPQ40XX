@@ -76,17 +76,18 @@ ubnt_xm_board_detect() {
 	case ${magic:0:3} in
 		"e00"|\
 		"e01"|\
-		"e80")  # Different revisions of the NanoStation?
+		"e80")
 			model="Ubiquiti NanoStation M"
 			;;
 		"e0a")
 			model="Ubiquiti NanoStation loco M"
 			;;
-		"e1b")  # Rocket M5 untested
+		"e1b"|\
+		"e1d")
 			model="Ubiquiti Rocket M"
 			;;
 		"e20"|\
-		"e2d")  # Bullet M Ti
+		"e2d")
 			model="Ubiquiti Bullet M"
 			;;
 		"e30")
@@ -434,9 +435,6 @@ ar71xx_board_detect() {
 	*"Arduino Yun")
 		name="arduino-yun"
 		;;
-	*AP113)
-		name="ap113"
-		;;
 	*"AP121 reference board")
 		name="ap121"
 		;;
@@ -463,12 +461,6 @@ ar71xx_board_detect() {
 		;;
 	*"AP152 reference board")
 		name="ap152"
-		;;
-	*AP81)
-		name="ap81"
-		;;
-	*AP83)
-		name="ap83"
 		;;
 	*AP90Q)
 		name="ap90q"
@@ -786,9 +778,6 @@ ar71xx_board_detect() {
 	*"PB44 reference board")
 		name="pb44"
 		;;
-	*PB92)
-		name="pb92"
-		;;
 	*"Qihoo 360 C301")
 		name="qihoo-c301"
 		;;
@@ -903,6 +892,9 @@ ar71xx_board_detect() {
 		;;
 	*SOM9331)
 		name="som9331"
+		;;
+	*SR3200)
+		name="sr3200"
 		;;
 	*TEW-632BRP)
 		name="tew-632brp"
@@ -1188,6 +1180,9 @@ ar71xx_board_detect() {
 		;;
 	*WHR-HP-G300N)
 		name="whr-hp-g300n"
+		;;
+	*XD3200)
+		name="xd3200"
 		;;
 	*Z1)
 		name="z1"
