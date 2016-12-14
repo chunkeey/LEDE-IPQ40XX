@@ -34,6 +34,7 @@ define Package/libustream-openssl
   $(Package/libustream/default)
   TITLE += (openssl)
   DEPENDS += +PACKAGE_libustream-openssl:libopenssl
+  PROVIDES:=libustream-polarssl
   VARIANT:=openssl
 endef
 
