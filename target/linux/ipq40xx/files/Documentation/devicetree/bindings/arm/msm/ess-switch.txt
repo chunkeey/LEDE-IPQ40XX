@@ -1,0 +1,39 @@
+* QCA ESS-SWITCH
+
+ESS-SWITCH is used to forward the packet among LAN, WAN and Host processor.
+
+These require the following properties:
+
+- compatible:           Must be "qcom,ess-switch"
+- reg:                  The first element specifies the base address and size of
+                        the register region. An optional second element specifies
+                        the base address and size of the alias register region.
+- switch_access_mode:   Register access mode to ess-switch
+- switch_cpu_bmp:       Define ports connect to cpu port
+- switch_lan_bmp:       Define ports belongs to Lan
+- switch_wan_bmp:       Define ports belongs to Wan
+- switch_mac_mode:      There are different mac mode configuration:
+   0--psgmii
+   1--psgmii+rgmii
+   2--psgmii+rmii0
+   3--psgmii+rmii1
+   4--psgmii+rmii0+rmii1
+   5--psgmii+rgmii
+- switch_initvlas:      Arrays used to configure specific registers. The first element
+                        specifies the register's offset. The second element specifies
+                        value which used to be configured.
+    port status: Different boards need different settings for port0/port5/port6
+
+Example:
+        ess-switch@c000000 {
+                compatible = "qcom,ess-switch";
+                reg = <0xc000000 0x80000>; /* 512KB */
+                switch_access_mode = "local bus";
+                switch_cpu_bmp = <0x1>;  /* cpu port bitmap */
+                switch_lan_bmp = <0x1e>; /* lan port bitmap */
+                switch_wan_bmp = <0x20>; /* wan port bitmap */
+                switch_mac_mode = <0x0>; /* mac mode for RGMII RMII */
+                switch_initvlas = <
+                        0x0007c 0x54     /* PORT0_STATUS */
+                >;
+        };
