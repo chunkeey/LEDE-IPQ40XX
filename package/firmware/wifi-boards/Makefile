@@ -12,7 +12,7 @@ endef
 define Build/Compile
 endef
 
-ALLWIFIBOARDS:=rt-ac58u fritz4040
+ALLWIFIBOARDS:=rt-ac58u fritz4040 nbg6617
 ALLWIFIPACKAGES:=$(foreach BOARD,$(ALLWIFIBOARDS),wifi-board-$(BOARD))
 
 define Package/wifi-board-default
@@ -49,5 +49,6 @@ endef
 
 $(eval $(call generate-wifi-board-package,rt-ac58u,board-rt-ac58u.bin,ASUS RT-AC58U/RT-ACRH13))
 $(eval $(call generate-wifi-board-package,fritz4040,board-fritz4040.bin,AVM FRITZBox 4040))
+$(eval $(call generate-wifi-board-package,nbg6617,board-nbg6617.bin,ZyXEL NBG6617))
 
 $(foreach PACKAGE,$(ALLWIFIPACKAGES),$(eval $(call BuildPackage,$(PACKAGE))))
