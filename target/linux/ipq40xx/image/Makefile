@@ -74,4 +74,27 @@ endef
 
 TARGET_DEVICES += RT-AC58U
 
+define Build/eva-image
+        lzma2eva $(KERNEL_LOADADDR) $(KERNEL_LOADADDR) $@ $@.new
+        ( dd if=$@.new bs=64k conv=sync; cat ./eva.dummy.squashfs; ) > $@
+endef
+
+define Device/FRITZ4040
+	$(call Device/FitImage)
+	DEVICE_DTS := fritz4040
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DTB_SIZE := 65536
+	BOARD_NAME := fritz4040
+	DEVICE_TITLE := AVM Fritz!Box 4040
+	IMAGE_SIZE := 21053440
+	KERNEL := kernel-bin | append-dtb | lzma | eva-image
+	KERNEL_INITRAMFS := kernel-bin | append-dtb | lzma | uImage lzma
+	IMAGES = sysupgrade.tar
+	IMAGE/sysupgrade.tar := sysupgrade-tar
+	DEVICE_PACKAGES := wifi-board-fritz4040
+endef
+
+TARGET_DEVICES += FRITZ4040
+
 $(eval $(call BuildImage))
