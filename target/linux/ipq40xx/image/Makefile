@@ -97,4 +97,22 @@ endef
 
 TARGET_DEVICES += FRITZ4040
 
+define Device/NBG6617
+	$(call Device/FitImage)
+	DEVICE_DTS := nbg6617
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DTB_SIZE := 65536
+	BOARD_NAME := nbg6617
+	DEVICE_TITLE := ZyXEL NBG6617
+	IMAGE_SIZE := 21053440
+	KERNEL := dtb | kernel-bin | gzip | fit-ramdisk lzma
+	KERNEL_INITRAMFS := dtb | kernel-bin | gzip | fit-ramdisk gzip
+	IMAGES = sysupgrade.tar
+	IMAGE/sysupgrade.tar := sysupgrade-tar
+	DEVICE_PACKAGES := wifi-board-nbg6617
+endef
+
+TARGET_DEVICES += NBG6617
+
 $(eval $(call BuildImage))
