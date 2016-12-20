@@ -16,6 +16,9 @@ ipq40xx_board_detect() {
 	*"AVM FRITZ!Box 4040")
 		name="fritz4040"
 		;;
+	*"ZyXEL NBG6617")
+		name="nbg6617"
+		;;
 	esac
 
 	[ -z "$name" ] && name="unknown"

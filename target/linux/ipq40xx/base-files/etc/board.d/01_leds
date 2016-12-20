@@ -13,6 +13,11 @@ fritz4040)
 	ucidef_set_led_netdev "wan" "WAN" "$board:green:wan" "eth1"
 	ucidef_set_led_switch "lan" "LAN" "${board}:green:lan" "switch0" "0x1e"
 	;;
+nbg6617)
+	ucidef_set_led_wlan "wlan2g" "WLAN2G" "$board:blue:wlan2G" "phy0tpt"
+	ucidef_set_led_wlan "wlan5g" "WLAN5G" "$board:blue:wlan5G" "phy1tpt"
+	ucidef_set_led_usbport "usb" "USB" "${board}:blue:usb" "usb1-port1" "usb2-port1" "usb3-port1" "usb4-port1"
+	;;
 rt-ac58u)
 	ucidef_set_led_wlan "wlan2g" "WLAN2G" "$board:blue:wlan2G" "phy0tpt"
 	ucidef_set_led_wlan "wlan5g" "WLAN5G" "$board:blue:wlan5G" "phy1tpt"
