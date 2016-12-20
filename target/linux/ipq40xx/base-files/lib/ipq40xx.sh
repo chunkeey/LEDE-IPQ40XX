@@ -13,6 +13,9 @@ ipq40xx_board_detect() {
 	*"ASUS RT-AC58U")
 		name="rt-ac58u"
 		;;
+	*"AVM FRITZ!Box 4040")
+		name ="fritz4040"
+		;;
 	esac
 
 	[ -z "$name" ] && name="unknown"
