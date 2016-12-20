@@ -16,7 +16,8 @@ case "$board" in
 	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	;;
 asus,rt-ac58u |\
-avm,fritzbox-4040)
+avm,fritzbox-4040 |\
+zyxel,nbg6617)
 	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "switch0" \
 		"0u@eth0" "1:lan" "2:lan" "3:lan" "4:lan"
