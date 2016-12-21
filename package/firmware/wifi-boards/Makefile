@@ -40,8 +40,8 @@ Don't install it for any other device!
   endef
 
   define Package/wifi-board-$(1)/install-overlay
-    $(INSTALL_DIR) $$(1)/lib/firmware/ath10k/QCA4019/hw1.0
-    $(INSTALL_DATA) ./$(2) $$(1)/lib/firmware/ath10k/QCA4019/hw1.0/board-2.bin
+	$(INSTALL_DIR) $$(1)/lib/firmware/ath10k/QCA4019/hw1.0
+	$(INSTALL_DATA) ./$(2) $$(1)/lib/firmware/ath10k/QCA4019/hw1.0/board-2.bin
   endef
 
   PREV_BOARD+=wifi-board-$(1)
