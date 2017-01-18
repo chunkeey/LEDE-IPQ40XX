@@ -1,5 +1,5 @@
---- a/compat/Kconfig	2017-01-15 20:20:30.153552885 +0100
-+++ b/compat/Kconfig	2017-01-15 20:20:36.776900738 +0100
+--- a/compat/Kconfig	2016-11-09 20:44:01.049929155 +0100
++++ b/compat/Kconfig	2016-11-09 20:44:16.186628780 +0100
 @@ -139,7 +139,7 @@ config BPAUTO_BUILD_WANT_DEV_COREDUMP
  config BPAUTO_RHASHTABLE
  	bool

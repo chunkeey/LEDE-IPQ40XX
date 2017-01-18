@@ -67,6 +67,12 @@ HOST_CONFIGURE_ARGS = \
 	--localstatedir=$(HOST_BUILD_PREFIX)/var \
 	--sbindir=$(HOST_BUILD_PREFIX)/bin
 
+HOST_MAKE_VARS = \
+	CFLAGS="$(HOST_CFLAGS)" \
+	CPPFLAGS="$(HOST_CPPFLAGS)" \
+	CXXFLAGS="$(HOST_CXXFLAGS)" \
+	LDFLAGS="$(HOST_LDFLAGS)"
+
 HOST_MAKE_FLAGS =
 
 HOST_CONFIGURE_CMD = $(BASH) ./configure
@@ -89,7 +95,8 @@ define Host/Configure
 endef
 
 define Host/Compile/Default
-	+$(MAKE) $(HOST_JOBS) -C $(HOST_BUILD_DIR) \
+	+$(HOST_MAKE_VARS) \
+	$(MAKE) $(HOST_JOBS) -C $(HOST_BUILD_DIR) \
 		$(HOST_MAKE_FLAGS) \
 		$(1)
 endef

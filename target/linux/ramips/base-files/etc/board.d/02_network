@@ -58,6 +58,7 @@ ramips_setup_interfaces()
 	timecloud|\
 	w150m|\
 	widora-neo|\
+	wn3000rpv3|\
 	wnce2001|\
 	zbt-cpe102|\
 	zte-q7)
@@ -174,8 +175,7 @@ ramips_setup_interfaces()
 		ucidef_add_switch "switch0" \
 			"1:lan" "2:lan" "3:lan" "4:lan" "0:wan" "9@eth0"
 		;;
-	cf-wr800n|\
-	ex2700)
+	cf-wr800n)
 		ucidef_add_switch "switch0" \
 			"4:lan" "6t@eth0"
 		;;
@@ -186,6 +186,7 @@ ramips_setup_interfaces()
 	cs-qr10|\
 	d105|\
 	dch-m225|\
+	ex2700|\
 	hpm|\
 	mzk-ex300np|\
 	mzk-ex750np|\
@@ -356,6 +357,10 @@ ramips_setup_macs()
 	mac1200rv2)
 		lan_mac=$(mtd_get_mac_binary factory_info 13)
 		wan_mac=$(macaddr_add "$lan_mac" 1)
+		;;
+	miwifi-mini)
+		wan_mac=$(cat /sys/class/net/eth0/address)
+		lan_mac=$(macaddr_setbit_la "$wan_mac")
 		;;
 	m3|\
 	m4|\
