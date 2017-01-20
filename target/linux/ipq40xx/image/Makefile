@@ -76,4 +76,26 @@ endef
 
 TARGET_DEVICES += RT-AC58U
 
+define Image/Build/squashfs
+        cp $(KDIR)/root.squashfs $(KDIR)/root.squashfs-raw
+        $(call prepare_generic_squashfs,$(KDIR)/root.squashfs)
+endef
+
+define Device/FRITZ4040
+	DEVICE_DTS := fritz4040
+	BLOCKSIZE := 4k
+	PAGESIZE := 256
+	DTB_SIZE := 65536
+	BOARD_NAME := fritz4040
+	DEVICE_TITLE := AVM Fritz!Box 4040
+	IMAGE_SIZE := 29753344
+	KERNEL := dtb | kernel-bin | lzma | fit-ramdisk lzma
+	KERNEL_INITRAMFS := dtb | kernel-bin | gzip | fit-ramdisk gzip
+	IMAGES = sysupgrade.bin
+	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
+	DEVICE_PACKAGES := wifi-board-fritz4040 fritz-tools
+endef
+
+TARGET_DEVICES += FRITZ4040
+
 $(eval $(call BuildImage))
