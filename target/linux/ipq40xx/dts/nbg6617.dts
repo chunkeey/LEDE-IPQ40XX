@@ -187,7 +187,7 @@
 
 	mx25l25635e@0 {
 		status = "disabled";
-	}
+	};
 
 	n25q128a11@0 {
 		status = "okay";

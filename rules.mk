@@ -101,6 +101,16 @@ ifdef CONFIG_MIPS64_ABI
   endif
 endif
 
+DEFAULT_SUBDIR_TARGETS:=clean download prepare compile install update refresh prereq dist distcheck configure check check-depends
+
+define DefaultTargets
+$(foreach t,$(DEFAULT_SUBDIR_TARGETS) $(1),
+  .$(t):
+  $(t): .$(t)
+  .PHONY: $(t) .$(t)
+)
+endef
+
 DL_DIR:=$(if $(call qstrip,$(CONFIG_DOWNLOAD_FOLDER)),$(call qstrip,$(CONFIG_DOWNLOAD_FOLDER)),$(TOPDIR)/dl)
 OUTPUT_DIR:=$(if $(call qstrip,$(CONFIG_BINARY_FOLDER)),$(call qstrip,$(CONFIG_BINARY_FOLDER)),$(TOPDIR)/bin)
 BIN_DIR:=$(OUTPUT_DIR)/targets/$(BOARD)/$(SUBTARGET)
@@ -223,7 +233,7 @@ else
 endif
 
 export PATH:=$(TARGET_PATH)
-export STAGING_DIR STAGING_DIR_HOST
+export STAGING_DIR STAGING_DIR_HOST STAGING_DIR_HOSTPKG
 export SH_FUNC:=. $(INCLUDE_DIR)/shell.sh;
 
 PKG_CONFIG:=$(STAGING_DIR_HOST)/bin/pkg-config

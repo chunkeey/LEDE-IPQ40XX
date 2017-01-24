@@ -83,6 +83,7 @@ ar71xx_setup_interfaces()
 	mr900|\
 	mr900v2|\
 	mynet-rext|\
+	pqi-air-pen|\
 	rb-411|\
 	rb-411u|\
 	rb-911g-2hpnd|\
@@ -94,6 +95,7 @@ ar71xx_setup_interfaces()
 	rb-sxt5n|\
 	re450|\
 	rocket-m-xw|\
+	sc300m |\
 	tl-mr10u|\
 	tl-mr11u|\
 	tl-mr12u|\
