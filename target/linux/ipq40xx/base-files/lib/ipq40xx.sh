@@ -16,6 +16,9 @@ ipq40xx_board_detect() {
 	*"AVM FRITZ!Box 4040")
 		name="fritz4040"
 		;;
+	*"Compex WPJ428")
+		name="wpj428"
+		;;
 	*"ZyXEL NBG6617")
 		name="nbg6617"
 		;;

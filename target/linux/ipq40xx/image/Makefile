@@ -115,4 +115,22 @@ endef
 
 TARGET_DEVICES += NBG6617
 
+define Device/WPJ428
+	DEVICE_DTS := wpj428
+	BLOCKSIZE := 4k
+	PAGESIZE := 256
+	DTB_SIZE := 65536
+	BOARD_NAME := wpj428
+	DEVICE_TITLE := Compex WPJ428
+	IMAGE_SIZE := 27262976
+	KERNEL_SIZE := 4194304
+	KERNEL := dtb | kernel-bin | lzma | fit-ramdisk lzma
+	KERNEL_INITRAMFS := dtb | kernel-bin | gzip | fit-ramdisk gzip
+	IMAGES = sysupgrade.bin
+	IMAGE/sysupgrade.bin := append-kernel | pad-to $$$$(KERNEL_SIZE) | append-rootfs | pad-rootfs | append-metadata
+	DEVICE_PACKAGES := kmod-gpio-beeper
+endef
+
+TARGET_DEVICES += WPJ428
+
 $(eval $(call BuildImage))
