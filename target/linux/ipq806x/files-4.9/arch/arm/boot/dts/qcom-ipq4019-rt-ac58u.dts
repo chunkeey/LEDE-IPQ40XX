@@ -196,7 +196,7 @@
 		 * if we don't have it, it will spit out the following warning:
 		 * "ipq: fdt fixup unable to find compatible node".
 		 */
-		compatible = "mx25l1606e", "n25q128a11";
+		compatible = "mx25l1606e", "n25q128a11", "jedec,spi-nor";
 		reg = <0>;
 		linux,modalias = "m25p80", "mx25l1606e", "n25q128a11";
 		spi-max-frequency = <24000000>;
