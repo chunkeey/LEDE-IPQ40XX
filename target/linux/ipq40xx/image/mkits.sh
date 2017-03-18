@@ -139,8 +139,8 @@ ${FDT}
 	};
 
 	configurations {
-		default = \"config@1\";
-		config@1 {
+		default = \"config@4\";
+		config@4 {
 			description = \"LEDE\";
 			kernel = \"kernel@1\";
 ${CONF}
