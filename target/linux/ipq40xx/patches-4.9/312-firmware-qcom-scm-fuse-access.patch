@@ -1,0 +1,85 @@
+--- a/drivers/firmware/qcom_scm-32.c	2017-03-20 22:27:07.740361111 +0100
++++ b/drivers/firmware/qcom_scm-32.c	2017-03-20 22:52:00.823718754 +0100
+@@ -560,3 +560,33 @@ int __qcom_scm_pas_mss_reset(struct devi
+ 
+ 	return ret ? : le32_to_cpu(out);
+ }
++
++int __qcom_scm_fuse(struct device *dev, u32 address, u32 *val)
++{
++	__le32 *otp_value;
++	dma_addr_t in;
++	int ret;
++
++	otp_value = kzalloc(PAGE_ALIGN(sizeof(*otp_value)), GFP_KERNEL);
++	if (!otp_value)
++		return -ENOMEM;
++
++	in = dma_map_single(dev, otp_value, sizeof(in), DMA_FROM_DEVICE);
++
++	ret = dma_mapping_error(dev, in);
++	if (ret != 0) {
++		kfree(otp_value);
++		pr_err("DMA Mapping Error %d\n", ret);
++		return ret;
++	}
++
++	ret = qcom_scm_call(dev, QCOM_SCM_SVC_FUSE, address,
++			    &in, sizeof(in), NULL, 0);
++
++	dma_unmap_single(dev, in, sizeof(in), DMA_FROM_DEVICE);
++
++	*val = le32_to_cpu(*otp_value);
++	kfree(otp_value);
++
++	return ret;
++}
+--- a/drivers/firmware/qcom_scm.c	2017-03-20 22:52:16.513767228 +0100
++++ b/drivers/firmware/qcom_scm.c	2017-03-20 22:57:57.914821975 +0100
+@@ -165,6 +165,25 @@ int qcom_scm_hdcp_req(struct qcom_scm_hd
+ EXPORT_SYMBOL(qcom_scm_hdcp_req);
+ 
+ /**
++ * qcom_scm_fuse() - Reads a value from the OTP
++ * @address: address
++ *
++ * Returns the value of the OTP at the specified address.
++ */
++int qcom_scm_fuse(u32 address, u32 *val)
++{
++	int ret = qcom_scm_clk_enable();
++
++	if (ret)
++		return ret;
++
++	ret = __qcom_scm_fuse(__scm->dev, address, val);
++	qcom_scm_clk_disable();
++	return ret;
++}
++EXPORT_SYMBOL(qcom_scm_fuse);
++
++/**
+  * qcom_scm_pas_supported() - Check if the peripheral authentication service is
+  *			      available for the given peripherial
+  * @peripheral:	peripheral id
+--- a/drivers/firmware/qcom_scm.h	2017-03-20 22:28:50.800430591 +0100
++++ b/drivers/firmware/qcom_scm.h	2017-03-20 22:59:28.661769003 +0100
+@@ -56,6 +56,9 @@ extern int  __qcom_scm_pas_auth_and_rese
+ extern int  __qcom_scm_pas_shutdown(struct device *dev, u32 peripheral);
+ extern int  __qcom_scm_pas_mss_reset(struct device *dev, bool reset);
+ 
++#define QCOM_SCM_SVC_FUSE		0x8
++extern int __qcom_scm_fuse(struct device *dev, u32 address, u32 *val);
++
+ /* common error codes */
+ #define QCOM_SCM_V2_EBUSY	-12
+ #define QCOM_SCM_ENOMEM		-5
+--- a/include/linux/qcom_scm.h	2017-03-20 23:06:19.313037696 +0100
++++ b/include/linux/qcom_scm.h	2017-03-20 23:06:51.179802813 +0100
+@@ -46,4 +46,6 @@ extern void qcom_scm_cpu_power_down(u32
+ 
+ extern u32 qcom_scm_get_version(void);
+ 
++extern int qcom_scm_fuse(u32 address, u32 *val);
++
+ #endif
