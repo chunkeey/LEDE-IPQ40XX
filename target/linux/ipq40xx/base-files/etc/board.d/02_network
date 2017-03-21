@@ -8,21 +8,35 @@ board_config_update
 
 board=$(ipq40xx_board_name)
 
+ipq40xx_get_dt_mac() {
+        local mac
+        local ethpath
+        local basepath="/sys/firmware/devicetree/base"
+        local nodepath="$basepath/aliases/ethernet$1"
+
+        [ -f "$nodepath" ] && ethpath=$(cat "$nodepath")
+        [ -n "$ethpath" ] && mac=$(cat "$basepath$ethpath/local-mac-address")
+
+        echo "$mac"
+}
+
 case "$board" in
 fritz4040)
-	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "switch0" \
-		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan"
+		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan" "5:wan"
+	lan_mac_addr=$(ipq40xx_get_dt_mac 0)
+	wan_mac_addr=$(ipq40xx_get_dt_mac 1)
+
+	ucidef_set_interface_macaddr "lan" "$lan_mac_addr"
+	ucidef_set_interface_macaddr "wan" "$wan_mac_addr"
 	;;
 nbg6617)
-	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "switch0" \
-		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan"
+		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan" "5:wan"
 	;;
 wpj428)
-	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "switch0" \
-		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan"
+		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan" "5:wan"
 
 	hw_mac_addr=$(mtd_get_mac_ascii APPSBLENV eth1addr)
 	ucidef_set_interface_macaddr "wan" "$hw_mac_addr"
@@ -32,9 +46,8 @@ rt-ac58u)
 	CI_UBIPART=UBI_DEV
 	wan_mac_addr=$(mtd_get_mac_binary_ubi Factory 20486)
 	lan_mac_addr=$(mtd_get_mac_binary_ubi Factory 4102)
-	ucidef_set_interfaces_lan_wan "eth0" "eth1"
 	ucidef_add_switch "switch0" \
-		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan"
+		"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan" "5:wan"
 	ucidef_set_interface_macaddr "lan" "$lan_mac_addr"
 	ucidef_set_interface_macaddr "wan" "$wan_mac_addr"
 	;;
