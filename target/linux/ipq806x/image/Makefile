@@ -223,6 +223,33 @@ define Device/R7800
 	DEVICE_PACKAGES := ath10k-firmware-qca9984
 endef
 
+define Build/copy-file
+	cat "$(1)" > "$@"
+endef
+
+define Device/RT-AC58U
+	$(call Device/FitImageLzma)
+	DEVICE_DTS := qcom-ipq4019-rt-ac58u
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DTB_SIZE := 65536
+	BOARD_NAME := rt-ac58u
+	KERNEL_LOADADDR := 0x80208000
+	DEVICE_TITLE := Asus RT-AC58U
+	IMAGE_SIZE := 20439364
+	FILESYSTEMS := squashfs
+#	Someone - in their infinite wisdom - decided to put the firmware
+#	version in front of the image name \03\00\00\04 => Version 3.0.0.4
+#	Since u-boot works with strings we either need another fixup step
+#	to add a version... or we are very careful not to add '\0' into that
+#	string and call it a day.... Yeah, we do the latter!
+	UIMAGE_NAME:=$(shell echo -e '\03\01\01\01RT-AC58U')
+	IMAGES = sysupgrade.tar flash-factory.trx
+	IMAGE/flash-factory.trx := copy-file $(KDIR)/tmp/$$(KERNEL_INITRAMFS_IMAGE) | uImage none
+	IMAGE/sysupgrade.tar := sysupgrade-tar | append-metadata
+	DEVICE_PACKAGES := kmod-usb-phy-qcom-ipq4019 ipq-wifi-rt-ac58u
+endef
+
 define Device/NBG6817
 	DEVICE_DTS := qcom-ipq8065-nbg6817
 	KERNEL_SIZE := 4096k
@@ -251,6 +278,6 @@ define Device/VR2600v
 endef
 
 TARGET_DEVICES += AP148 AP148-legacy C2600 D7800 DB149 EA8500 FRITZ4040 R7500 \
-		  R7500v2 R7800 NBG6817 VR2600v
+		  R7500v2 R7800 RT-AC58U NBG6817 VR2600v
 
 $(eval $(call BuildImage))
