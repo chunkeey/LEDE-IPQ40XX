@@ -180,6 +180,7 @@ define Device/FRITZ4040
 	DEVICE_TITLE := AVM Fritz!Box 4040
 	IMAGE_SIZE := 29753344
 	IMAGES = sysupgrade.bin
+	FILESYSTEMS := squashfs
 	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
 	DEVICE_PACKAGES := kmod-usb-phy-qcom-ipq4019 ipq-wifi-fritz4040 fritz-tools u-boot-fritz4040
 endef
