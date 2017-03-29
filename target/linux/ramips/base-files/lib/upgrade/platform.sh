@@ -35,6 +35,7 @@ platform_check_image() {
 	cf-wr800n|\
 	cs-qr10|\
 	d105|\
+	d240|\
 	dap-1350|\
 	db-wrt01|\
 	dcs-930|\
@@ -52,7 +53,9 @@ platform_check_image() {
 	dwr-512-b|\
 	e1700|\
 	esr-9753|\
+	ew1200|\
 	ex2700|\
+	ex3700|\
 	f7c027|\
 	firewrt|\
 	fonera20n|\
@@ -61,6 +64,7 @@ platform_check_image() {
 	gl-mt300n|\
 	gl-mt750|\
 	hc5*61|\
+	hc5661a|\
 	hg255d|\
 	hlk-rm04|\
 	hpm|\
@@ -177,6 +181,7 @@ platform_check_image() {
 	zbt-ape522ii|\
 	zbt-cpe102|\
 	zbt-wa05|\
+	zbt-we2026|\
 	zbt-we826|\
 	zbt-wg2626|\
 	zbt-wg3526|\
@@ -226,16 +231,22 @@ platform_check_image() {
 		}
 		return 0
 		;;
+	hc5962|\
+	r6220)
+		# these boards use metadata images
+		return 0
+		;;
+	ubnt-erx)
+		nand_do_platform_check "$board" "$1"
+		return $?;
+		;;
+	wcr-1166ds|\
 	wsr-1166)
 		[ "$magic" != "48445230" ] && {
 			echo "Invalid image type."
 			return 1
 		}
 		return 0
-		;;
-	ubnt-erx)
-		nand_do_platform_check "$board" "$1"
-		return $?;
 		;;
 	esac
 
@@ -257,6 +268,8 @@ platform_pre_upgrade() {
 	local board=$(ramips_board_name)
 
 	case "$board" in
+	hc5962|\
+	r6220|\
     	ubnt-erx)
 		nand_do_upgrade "$ARGV"
 		;;

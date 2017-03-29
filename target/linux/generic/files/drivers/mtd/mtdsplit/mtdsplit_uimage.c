@@ -262,7 +262,7 @@ static ssize_t uimage_verify_wndr3700(u_char *buf, size_t len)
 	struct uimage_header *header = (struct uimage_header *)buf;
 	uint8_t expected_type = IH_TYPE_FILESYSTEM;
 
-	switch be32_to_cpu(header->ih_magic) {
+	switch (be32_to_cpu(header->ih_magic)) {
 	case FW_MAGIC_WNR612V2:
 	case FW_MAGIC_WNR1000V2:
 	case FW_MAGIC_WNR1000V2_VC:
@@ -331,7 +331,7 @@ static ssize_t uimage_find_edimax(u_char *buf, size_t len)
 
 static int
 mtdsplit_uimage_parse_edimax(struct mtd_info *master,
-			     const struct mtd_partition **pparts,
+			      const struct mtd_partition **pparts,
 			      struct mtd_part_parser_data *data)
 {
 	return __mtdsplit_parse_uimage(master, pparts, data,

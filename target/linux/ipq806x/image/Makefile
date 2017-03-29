@@ -5,16 +5,8 @@ include $(INCLUDE_DIR)/image.mk
 
 UBIFS_OPTS = -m 2048 -e 124KiB -c 4096 -U -F
 
-KERNEL_LOADADDR := 0x42208000
-
 define Image/Prepare
 	$(CP) $(LINUX_DIR)/vmlinux $(KDIR)/$(IMG_PREFIX)-vmlinux.elf
-	mkimage -A arm -O linux -T filesystem -C none \
-		-a $(KERNEL_LOADADDR) -e $(KERNEL_LOADADDR) \
-		-n 'ARM OpenWrt fakeroot' \
-		-s $(KDIR_TMP)/root.dummy-uImage.tmp
-	echo -ne '\xff' > $(KDIR_TMP)/root.dummy
-	cat $(KDIR_TMP)/root.dummy $(KDIR_TMP)/root.dummy-uImage.tmp > $(KDIR)/root.dummy
 endef
 
 define Image/BuildKernel
@@ -31,15 +23,12 @@ define Image/Build
 	dd if=$(KDIR)/root.$(1) of=$(BIN_DIR)/$(IMG_PREFIX)-$(1)-root.img bs=2k conv=sync
 endef
 
-define Build/append-file
-	cat $(1) >> $@
-endef
-
 define Device/Default
 	PROFILES := Default
 	KERNEL_DEPENDS = $$(wildcard $(DTS_DIR)/$$(DEVICE_DTS).dts)
 	KERNEL_INITRAMFS_PREFIX := $$(IMG_PREFIX)-$(1)-initramfs
 	KERNEL_PREFIX := $$(IMAGE_PREFIX)
+	KERNEL_LOADADDR = 0x42208000
 	SUPPORTED_DEVICES = $$(BOARD_NAME)
 	IMAGE/sysupgrade.tar = sysupgrade-tar | append-metadata
 endef
@@ -56,6 +45,12 @@ define Device/FitImage
 	KERNEL_NAME := Image
 endef
 
+define Device/FitImageLzma
+	KERNEL_SUFFIX := -fit-uImage.itb
+	KERNEL = kernel-bin | lzma | fit lzma $$(DTS_DIR)/$$(DEVICE_DTS).dtb
+	KERNEL_NAME := Image
+endef
+
 define Device/UbiFit
 	KERNEL_IN_UBI := 1
 	IMAGES := nand-factory.ubi nand-sysupgrade.tar
@@ -67,14 +62,14 @@ define Device/DniImage
 	PROFILES += $$(DEVICE_NAME)
 	FILESYSTEMS := squashfs
 	KERNEL_SUFFIX := -uImage
-	KERNEL_INITRAMFS := kernel-bin | append-dtb | uImage none
-	KERNEL = kernel-bin | append-dtb | pad-to $$$$(($$(KERNEL_SIZE)-2*64-1)) | uImage none | append-file $(KDIR)/root.dummy
+	KERNEL = kernel-bin | append-dtb | uImage none
 	KERNEL_NAME := zImage
 	NETGEAR_BOARD_ID :=
 	NETGEAR_HW_ID :=
 	UBINIZE_OPTS := -E 5
 	IMAGES := factory.img sysupgrade.tar
-	IMAGE/factory.img := append-kernel | append-ubi | netgear-dni
+	IMAGE/factory.img := append-kernel | pad-offset $$$$(BLOCKSIZE) 64 | append-uImage-fakeroot-hdr | pad-to $$$$(KERNEL_SIZE) | append-ubi | netgear-dni
+	IMAGE/sysupgrade.tar := append-kernel | pad-offset $$$$(BLOCKSIZE) 64 | append-uImage-fakeroot-hdr | sysupgrade-tar kernel=$$$$@ | append-metadata
 endef
 DEVICE_VARS += NETGEAR_BOARD_ID NETGEAR_HW_ID
 
@@ -165,7 +160,7 @@ define Device/EA8500
 	BLOCKSIZE := 128k
 	KERNEL_SIZE := 3072k
 	FILESYSTEMS := squashfs
-	KERNEL = kernel-bin | append-dtb | uImage none | append-file $(KDIR)/root.dummy
+	KERNEL = kernel-bin | append-dtb | uImage none | append-uImage-fakeroot-hdr
 	PROFILES += $$(DEVICE_NAME)
 	BOARD_NAME := ea8500
 	UBINIZE_OPTS := -E 5
@@ -173,6 +168,21 @@ define Device/EA8500
 	IMAGE/factory.bin := append-kernel | pad-to $$$${KERNEL_SIZE} | append-ubi
 	DEVICE_TITLE := Linksys EA8500
 	DEVICE_PACKAGES := ath10k-firmware-qca99x0
+endef
+
+define Device/FRITZ4040
+	$(call Device/FitImageLzma)
+	DEVICE_DTS := qcom-ipq4019-fritz4040
+	KERNEL_LOADADDR := 0x80208000
+	BLOCKSIZE := 4k
+	PAGESIZE := 256
+	BOARD_NAME := fritz4040
+	DEVICE_TITLE := AVM Fritz!Box 4040
+	IMAGE_SIZE := 29753344
+	IMAGES = sysupgrade.bin
+	FILESYSTEMS := squashfs
+	IMAGE/sysupgrade.bin := append-kernel | append-rootfs | pad-rootfs | append-metadata
+	DEVICE_PACKAGES := kmod-usb-phy-qcom-ipq4019 ipq-wifi-fritz4040 fritz-tools u-boot-fritz4040
 endef
 
 define Device/R7500
@@ -185,7 +195,7 @@ define Device/R7500
 	PAGESIZE := 2048
 	BOARD_NAME := r7500
 	DEVICE_TITLE := Netgear Nighthawk X4 R7500
-	DEVICE_PACKAGES := ath10k-firmware-qca99x0
+	DEVICE_PACKAGES := ath10k-firmware-qca988x
 endef
 
 define Device/R7500v2
@@ -198,7 +208,7 @@ define Device/R7500v2
 	PAGESIZE := 2048
 	BOARD_NAME := r7500v2
 	DEVICE_TITLE := Netgear Nighthawk X4 R7500v2
-	DEVICE_PACKAGES := ath10k-firmware-qca99x0
+	DEVICE_PACKAGES := ath10k-firmware-qca99x0 ath10k-firmware-qca988x
 endef
 
 define Device/R7800
@@ -212,6 +222,33 @@ define Device/R7800
 	BOARD_NAME := r7800
 	DEVICE_TITLE := Netgear Nighthawk X4S R7800
 	DEVICE_PACKAGES := ath10k-firmware-qca9984
+endef
+
+define Build/copy-file
+	cat "$(1)" > "$@"
+endef
+
+define Device/RT-AC58U
+	$(call Device/FitImageLzma)
+	DEVICE_DTS := qcom-ipq4019-rt-ac58u
+	BLOCKSIZE := 128k
+	PAGESIZE := 2048
+	DTB_SIZE := 65536
+	BOARD_NAME := rt-ac58u
+	KERNEL_LOADADDR := 0x80208000
+	DEVICE_TITLE := Asus RT-AC58U
+	IMAGE_SIZE := 20439364
+	FILESYSTEMS := squashfs
+#	Someone - in their infinite wisdom - decided to put the firmware
+#	version in front of the image name \03\00\00\04 => Version 3.0.0.4
+#	Since u-boot works with strings we either need another fixup step
+#	to add a version... or we are very careful not to add '\0' into that
+#	string and call it a day.... Yeah, we do the latter!
+	UIMAGE_NAME:=$(shell echo -e '\03\01\01\01RT-AC58U')
+	IMAGES = sysupgrade.tar flash-factory.trx
+	IMAGE/flash-factory.trx := copy-file $(KDIR)/tmp/$$(KERNEL_INITRAMFS_IMAGE) | uImage none
+	IMAGE/sysupgrade.tar := sysupgrade-tar | append-metadata
+	DEVICE_PACKAGES := kmod-usb-phy-qcom-ipq4019 ipq-wifi-rt-ac58u
 endef
 
 define Device/NBG6817
@@ -241,6 +278,7 @@ define Device/VR2600v
 	IMAGE/sysupgrade.bin := pad-extra 512 | append-kernel | pad-to $$$${KERNEL_SIZE} | append-rootfs | pad-rootfs | append-metadata
 endef
 
-TARGET_DEVICES += AP148 AP148-legacy C2600 D7800 DB149 EA8500 R7500 R7500v2 R7800 NBG6817 VR2600v
+TARGET_DEVICES += AP148 AP148-legacy C2600 D7800 DB149 EA8500 FRITZ4040 R7500 \
+		  R7500v2 R7800 RT-AC58U NBG6817 VR2600v
 
 $(eval $(call BuildImage))

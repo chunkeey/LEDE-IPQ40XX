@@ -8,6 +8,12 @@ get_status_led() {
 	local board=$(ar71xx_board_name)
 
 	case $board in
+	a40)
+		status_led="a40:green:status"
+		;;
+	a60)
+		status_led="a60:green:status"
+		;;
 	alfa-nx)
 		status_led="alfa:green:led_8"
 		;;
@@ -20,10 +26,13 @@ get_status_led() {
 	minibox-v1|\
 	som9331|\
 	sr3200|\
+	tl-wr802n-v2|\
 	xd3200)
 		status_led="$board:green:system"
 		;;
 	ap132|\
+	ap531b0|\
+	cpe505n|\
 	db120|\
 	dr344|\
 	tew-632brp|\
@@ -41,6 +50,8 @@ get_status_led() {
 	ap135-020)
 		status_led="ap135:green:status"
 		;;
+	archer-c59-v1|\
+	archer-c60-v1|\
 	mr12|\
 	mr16|\
 	nbg6616|\
@@ -52,7 +63,9 @@ get_status_led() {
 	ap90q|\
 	cpe830|\
 	cpe870|\
-	gl-inet)
+	gl-inet|\
+	gl-mifi|\
+	gl-ar300m)
 		status_led="$board:green:lan"
 		;;
 	ap96)
@@ -240,9 +253,11 @@ get_status_led() {
 		;;
 	om2p|\
 	om2pv2|\
+	om2pv4|\
 	om2p-hs|\
 	om2p-hsv2|\
 	om2p-hsv3|\
+	om2p-hsv4|\
 	om2p-lc)
 		status_led="om2p:blue:power"
 		;;
@@ -266,6 +281,9 @@ get_status_led() {
 	pb44)
 		status_led="$board:amber:jump1"
 		;;
+	r602n)
+		status_led="$board:green:wan"
+		;;
 	rb-2011l|\
 	rb-2011uas|\
 	rb-2011uas-2hnd)
@@ -283,14 +301,22 @@ get_status_led() {
 	rb-750)
 		status_led="rb750:green:act"
 		;;
+	rb-750-r2|\
+	rb-750up-r2|\
 	rb-911g-2hpnd|\
 	rb-911g-5hpacd|\
 	rb-911g-5hpnd|\
 	rb-912uag-2hpnd|\
-	rb-912uag-5hpnd)
+	rb-912uag-5hpnd|\
+	rb-941-2nd|\
+	rb-951ui-2nd|\
+	rb-952ui-5ac2nd|\
+	rb-962uigs-5hact2hnt|\
+	rb-lhg-5nd|\
+	rb-mapl-2nd)
 		status_led="rb:green:user"
 		;;
-	rb-951ui-2hnd | rb-941-2nd)
+	rb-951ui-2hnd)
 		status_led="rb:green:act"
 		;;
 	rb-sxt2n|\
@@ -331,7 +357,8 @@ get_status_led() {
 	tl-wa750re)
 		status_led="tp-link:orange:re"
 		;;
-	tl-wa850re)
+	tl-wa850re|\
+	tl-wa850re-v2)
 		status_led="tp-link:blue:re"
 		;;
 	tl-wa860re)
@@ -356,6 +383,8 @@ get_status_led() {
 	tl-wr741nd|\
 	tl-wr741nd-v4|\
 	tl-wa801nd-v3|\
+	tl-wr840n-v2|\
+	tl-wr840n-v3|\
 	tl-wr841n-v1|\
 	tl-wr841n-v7|\
 	tl-wr841n-v8|\

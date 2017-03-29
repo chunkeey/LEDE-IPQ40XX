@@ -12,10 +12,10 @@ PKG_NAME:=sched-cake
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/kdarbyshirebryant/sch_cake.git
-PKG_SOURCE_DATE:=2017-01-21
-PKG_SOURCE_VERSION:=69449f3c554e93bd9f7a9b708c808d11fe5dba74
-PKG_MIRROR_HASH:=51dcce8b78e3690296aff1fc22f939b4b73904b9c1d21a583d7d6af803926fac
+PKG_SOURCE_URL:=https://github.com/dtaht/sch_cake.git
+PKG_SOURCE_DATE:=2017-01-28
+PKG_SOURCE_VERSION:=9789742cfc596d48583ba4cdbc8f38d026121fa6
+PKG_MIRROR_HASH:=2a5afc45722c28ca8778eb50452eb305306e7898b32d7d6d73d3e77edf3cce99
 PKG_MAINTAINER:=Kevin Darbyshire-Bryant <kevin@darbyshire-bryant.me.uk>
 
 include $(INCLUDE_DIR)/package.mk

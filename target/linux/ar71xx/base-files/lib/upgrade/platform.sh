@@ -46,7 +46,7 @@ platform_find_kernelpart() {
 platform_find_rootfspart() {
 	local part
 	for part in "${1%:*}" "${1#*:}"; do
-		[ "$part" != "$2" ] && echo "$part"; break
+		[ "$part" != "$2" ] && echo "$part" && break
 	done
 }
 
@@ -204,7 +204,10 @@ platform_check_image() {
 	airgateway|\
 	airrouter|\
 	ap132|\
+	ap531b0|\
 	ap90q|\
+	archer-c59-v1|\
+	archer-c60-v1|\
 	bullet-m|\
 	c-55|\
 	carambola2|\
@@ -214,6 +217,7 @@ platform_check_image() {
 	cf-e380ac-v2|\
 	cf-e520n|\
 	cf-e530n|\
+	cpe505n|\
 	cpe830|\
 	cpe870|\
 	dgl-5500-a1|\
@@ -231,6 +235,7 @@ platform_check_image() {
 	dlan-pro-500-wp|\
 	dr531|\
 	dragino2|\
+	ebr-2310-c1|\
 	epg5000|\
 	esr1750|\
 	esr900|\
@@ -244,6 +249,7 @@ platform_check_image() {
 	hiwifi-hc6361|\
 	hornet-ub-x2|\
 	jwap230|\
+	lima|\
 	loco-m-xw|\
 	mzk-w04nu|\
 	mzk-w300nh|\
@@ -251,6 +257,7 @@ platform_check_image() {
 	nanostation-m|\
 	nbg460n_550n_550nh|\
 	pqi-air-pen|\
+	r602n|\
 	rocket-m-ti|\
 	rocket-m-xw|\
 	rocket-m|\
@@ -340,7 +347,6 @@ platform_check_image() {
 	ls-sr71|\
 	pb42|\
 	pb44|\
-	rb-941-2nd|\
 	routerstation-pro|\
 	routerstation|\
 	wp543|\
@@ -399,6 +405,7 @@ platform_check_image() {
 	tl-wa801nd-v3|\
 	tl-wa830re-v2|\
 	tl-wa850re|\
+	tl-wa850re-v2|\
 	tl-wa860re|\
 	tl-wa901nd-v2|\
 	tl-wa901nd-v3|\
@@ -421,7 +428,10 @@ platform_check_image() {
 	tl-wr741nd-v4|\
 	tl-wr741nd|\
 	tl-wr802n-v1|\
+	tl-wr802n-v2|\
 	tl-wr810n|\
+	tl-wr840n-v2|\
+	tl-wr840n-v3|\
 	tl-wr841n-v11|\
 	tl-wr841n-v1|\
 	tl-wr841n-v7|\
@@ -476,7 +486,33 @@ platform_check_image() {
 	tew-673gru)
 		dir825b_check_image "$1" && return 0
 		;;
-	rb*)
+	rb-411|\
+	rb-411u|\
+	rb-433|\
+	rb-433u|\
+	rb-435g|\
+	rb-450|\
+	rb-450g|\
+	rb-493|\
+	rb-493g|\
+	rb-750|\
+	rb-750gl|\
+	rb-751|\
+	rb-751g|\
+	rb-911g-2hpnd|\
+	rb-911g-5hpnd|\
+	rb-911g-5hpacd|\
+	rb-912uag-2hpnd|\
+	rb-912uag-5hpnd|\
+	rb-951g-2hnd|\
+	rb-951ui-2hnd|\
+	rb-2011l|\
+	rb-2011uas|\
+	rb-2011uias|\
+	rb-2011uas-2hnd|\
+	rb-2011uias-2hnd|\
+	rb-sxt2n|\
+	rb-sxt5n)
 		nand_do_platform_check routerboard $1
 		return $?
 		;;
@@ -496,6 +532,8 @@ platform_check_image() {
 		tplink_pharos_check_image "$1" && return 0
 		return 1
 		;;
+	a40|\
+	a60|\
 	mr1750v2|\
 	mr1750|\
 	mr600v2|\
@@ -504,9 +542,11 @@ platform_check_image() {
 	mr900|\
 	om2p-hsv2|\
 	om2p-hsv3|\
+	om2p-hsv4|\
 	om2p-hs|\
 	om2p-lc|\
 	om2pv2|\
+	om2pv4|\
 	om2p|\
 	om5p-acv2|\
 	om5p-ac|\
@@ -597,6 +637,17 @@ platform_check_image() {
 
 		return 0;
 		;;
+	# these boards use metadata images
+	rb-750-r2|\
+	rb-750up-r2|\
+	rb-941-2nd|\
+	rb-951ui-2nd|\
+	rb-952ui-5ac2nd|\
+	rb-962uigs-5hact2hnt|\
+	rb-lhg-5nd|\
+	rb-mapl-2nd)
+		return 0
+		;;
 	esac
 
 	echo "Sysupgrade is not yet supported on $board."
@@ -607,13 +658,50 @@ platform_pre_upgrade() {
 	local board=$(ar71xx_board_name)
 
 	case "$board" in
-	rb*|\
 	c-60|\
 	nbg6716|\
 	r6100|\
+	rb-411|\
+	rb-411u|\
+	rb-433|\
+	rb-433u|\
+	rb-435g|\
+	rb-450|\
+	rb-450g|\
+	rb-493|\
+	rb-493g|\
+	rb-750|\
+	rb-750gl|\
+	rb-751|\
+	rb-751g|\
+	rb-911g-2hpnd|\
+	rb-911g-5hpnd|\
+	rb-911g-5hpacd|\
+	rb-912uag-2hpnd|\
+	rb-912uag-5hpnd|\
+	rb-951g-2hnd|\
+	rb-951ui-2hnd|\
+	rb-2011l|\
+	rb-2011uas|\
+	rb-2011uias|\
+	rb-2011uas-2hnd|\
+	rb-2011uias-2hnd|\
+	rb-sxt2n|\
+	rb-sxt5n|\
 	wndr3700v4|\
 	wndr4300)
 		nand_do_upgrade "$1"
+		;;
+	rb-750-r2|\
+	rb-750up-r2|\
+	rb-941-2nd|\
+	rb-951ui-2nd|\
+	rb-952ui-5ac2nd|\
+	rb-962uigs-5hact2hnt|\
+	rb-lhg-5nd|\
+	rb-mapl-2nd)
+		# erase firmware if booted from initramfs
+		[ -z "$(rootfs_type)" ] && mtd erase firmware
 		;;
 	mr18|\
 	z1)
@@ -641,10 +729,6 @@ platform_do_upgrade() {
 	local board=$(ar71xx_board_name)
 
 	case "$board" in
-	rb-941-2nd)
-		PLATFORM_DO_UPGRADE_COMBINED_SEPARATE_MTD=1
-		platform_do_upgrade_combined "$ARGV"
-		;;
 	all0258n)
 		platform_do_upgrade_allnet "0x9f050000" "$ARGV"
 		;;
@@ -671,6 +755,8 @@ platform_do_upgrade() {
 	tew-673gru)
 		platform_do_upgrade_dir825b "$ARGV"
 		;;
+	a40|\
+	a60|\
 	mr1750v2|\
 	mr1750|\
 	mr600v2|\
@@ -679,9 +765,11 @@ platform_do_upgrade() {
 	mr900|\
 	om2p-hsv2|\
 	om2p-hsv3|\
+	om2p-hsv4|\
 	om2p-hs|\
 	om2p-lc|\
 	om2pv2|\
+	om2pv4|\
 	om2p|\
 	om5p-acv2|\
 	om5p-ac|\

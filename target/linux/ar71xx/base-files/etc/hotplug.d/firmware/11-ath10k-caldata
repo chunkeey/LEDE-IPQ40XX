@@ -76,6 +76,8 @@ case "$FIRMWARE" in
 		ath10kcal_extract "art" 20480 2116
 		ath10kcal_patch_mac $(macaddr_add $(cat /sys/class/net/eth1/address) -1)
 		;;
+	a40 | \
+	a60 | \
 	mr1750 | \
 	mr1750v2 | \
 	om5p-acv2)
@@ -90,6 +92,8 @@ case "$FIRMWARE" in
 		ath10kcal_extract "art" 20480 2116
 		ath10kcal_patch_mac $(macaddr_add $(cat /sys/class/net/eth0/address) -2)
 		;;
+	archer-c59-v1|\
+	archer-c60-v1|\
 	tl-wdr6500-v2)
 		ath10kcal_extract "art" 20480 2116
 		ath10kcal_patch_mac $(macaddr_add $(cat /sys/class/net/eth1/address) -2)
@@ -101,6 +105,9 @@ case "$FIRMWARE" in
 	unifiac-lite | \
 	unifiac-pro)
 		ath10kcal_extract "EEPROM" 20480 2116
+		;;
+	rb-952ui-5ac2nd)
+		ath10kcal_from_file "/sys/firmware/routerboot/ext_wlan_data" 20480 2116
 		;;
 	esac
 	;;
@@ -120,7 +127,8 @@ case "$FIRMWARE" in
 		ath10kcal_extract "ART" 20480 2116
 		ath10kcal_patch_mac $(macaddr_add $(cat /sys/class/net/eth0/address) +16)
 		;;
-	rb-911g-5hpacd)
+	rb-911g-5hpacd | \
+	rb-962uigs-5hact2hnt)
 		ath10kcal_from_file "/sys/firmware/routerboot/ext_wlan_data" 20480 2116
 		;;
 	esac

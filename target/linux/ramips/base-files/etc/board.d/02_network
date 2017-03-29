@@ -33,7 +33,8 @@ ramips_setup_interfaces()
 
 	case $board in
 	11acnas|\
-	w2914nsv2)
+	w2914nsv2|\
+	zbt-we2026)
 		ucidef_add_switch "switch0" \
 			"0:lan:4" "1:lan:3" "2:lan:2" "3:lan:1" "4:wan:5" "6@eth0"
 		;;
@@ -58,7 +59,6 @@ ramips_setup_interfaces()
 	timecloud|\
 	w150m|\
 	widora-neo|\
-	wn3000rpv3|\
 	wnce2001|\
 	zbt-cpe102|\
 	zte-q7)
@@ -73,12 +73,16 @@ ramips_setup_interfaces()
 	3g-6200n|\
 	ac1200pro|\
 	ai-br100|\
+	d240|\
 	db-wrt01|\
 	dir-300-b7|\
 	dir-320-b1|\
 	dir-610-a1|\
 	dir-615-h1|\
+	ew1200|\
 	firewrt|\
+	hc5661a|\
+	hc5962|\
 	hlk-rm04|\
 	mac1200rv2|\
 	miwifi-mini|\
@@ -92,6 +96,7 @@ ramips_setup_interfaces()
 	pbr-m1|\
 	psg1208|\
 	psg1218|\
+	r6220|\
 	sap-g3200u3|\
 	sk-wb8|\
 	vr500|\
@@ -125,7 +130,6 @@ ramips_setup_interfaces()
 			"0:lan" "1:lan" "2:lan" "3:lan" "4:wan" "5@eth0"
 		;;
 	asl26555|\
-	re6500|\
 	rp-n53)
 		ucidef_add_switch "switch0" \
 			"1:lan" "2:lan" "3:lan" "4:lan" "6t@eth0"
@@ -187,6 +191,7 @@ ramips_setup_interfaces()
 	d105|\
 	dch-m225|\
 	ex2700|\
+	ex3700|\
 	hpm|\
 	mzk-ex300np|\
 	mzk-ex750np|\
@@ -194,6 +199,7 @@ ramips_setup_interfaces()
 	pbr-d1|\
 	wli-tx4-ag300n|\
 	wmr-300|\
+	wn3000rpv3|\
 	wrh-300cr)
 		ucidef_set_interface_lan "eth0"
 		;;
@@ -236,11 +242,12 @@ ramips_setup_interfaces()
 			"0:lan" "4:lan" "6t@eth0"
 		;;
 	newifi-d1)
-		ucidef_set_interface_lan_wan "eth0.1" "eth0.2"
 		ucidef_add_switch "switch0" \
-			"0:lan" "1:lan" "2:lan" "3:lan" "5:wan" "6t@eth0" "7t@eth0"
-		ucidef_add_switch "switch1" \
-			"4:lan" "6t@eth0" "7t@eth0"
+		"1:lan:2" "2:lan:1" "4:wan" "6@eth0"
+		;;
+	re6500)
+		ucidef_add_switch "switch0" \
+			"0:lan:1" "1:lan:2" "2:lan:3" "3:lan:4" "6@eth0"
 		;;
 	rt-n56u)
 		ucidef_add_switch "switch0" \
@@ -262,6 +269,10 @@ ramips_setup_interfaces()
 	wzr-agl300nh)
 		ucidef_add_switch "switch0" \
 			"1:lan" "2:lan" "3:lan" "4:lan" "0:wan" "5@eth0"
+		;;
+	wcr-1166ds)
+		ucidef_add_switch "switch0" \
+			"3:lan" "4:wan" "6@eth0"
 		;;
 	wcr-150gn)
 		ucidef_add_switch "switch0" \
@@ -341,7 +352,9 @@ ramips_setup_macs()
 	e1700)
 		wan_mac=$(mtd_get_mac_ascii config WAN_MAC_ADDR)
 		;;
-	hc5*61)
+	hc5*61|\
+	hc5661a|\
+	hc5962)
 		lan_mac=`mtd_get_mac_ascii bdinfo "Vfac_mac "`
 		[ -n "$lan_mac" ] || lan_mac=$(cat /sys/class/net/eth0/address)
 		wan_mac=$(macaddr_add "$lan_mac" 1)
@@ -384,6 +397,10 @@ ramips_setup_macs()
 		lan_mac=$(mtd_get_mac_binary factory 40)
 		wan_mac=$(mtd_get_mac_binary factory 46)
 		;;
+	r6220)
+		wan_mac=$(mtd_get_mac_binary factory 4)
+		lan_mac=$(macaddr_add "$wan_mac" 1)
+		;;
 	rt-n56u)
 		lan_mac=$(cat /sys/class/net/eth0/address)
 		lan_mac=$(macaddr_setbit_la "$lan_mac")
@@ -410,6 +427,12 @@ ramips_setup_macs()
 		lan_mac=$(cat /sys/class/net/eth0/address)
 		wan_mac=$(macaddr_add "$lan_mac" 5)
 		;;
+	wcr-1166ds|\
+	wsr-1166)
+		local index="$(find_mtd_index "board_data")"
+		wan_mac="$(grep -m1 mac= "/dev/mtd${index}" | cut -d= -f2)"
+		lan_mac=$wan_mac
+		;;
 	wcr-150gn)
 		wan_mac=$(mtd_get_mac_binary factory 40)
 		;;
@@ -426,11 +449,6 @@ ramips_setup_macs()
 		;;
 	wlr-6000)
 		wan_mac=$(macaddr_add "$(mtd_get_mac_binary factory 32772)" 2)
-		;;
-	wsr-1166)
-		local index="$(find_mtd_index "board_data")"
-		wan_mac="$(grep -m1 mac= "/dev/mtd${index}" | cut -d= -f2)"
-		lan_mac=$wan_mac
 		;;
 	*)
 		lan_mac=$(cat /sys/class/net/eth0/address)

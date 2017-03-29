@@ -1,8 +1,16 @@
+define Device/ap531b0
+  DEVICE_TITLE := Rockeetech AP531B0
+  DEVICE_PACKAGES := kmod-usb-core kmod-usb2
+  BOARDNAME = AP531B0
+  IMAGE_SIZE := 16000k
+  MTDPARTS := spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,16000k(firmware),64k(art)ro
+endef
+TARGET_DEVICES += ap531b0
+
 define Device/ap90q
   DEVICE_TITLE := YunCore AP90Q
   BOARDNAME = AP90Q
   IMAGE_SIZE = 16000k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env),16000k(firmware),64k(art)ro
 endef
 TARGET_DEVICES += ap90q
@@ -31,7 +39,6 @@ define Device/cf-e316n-v2
   DEVICE_TITLE := COMFAST CF-E316N v2
   BOARDNAME = CF-E316N-V2
   IMAGE_SIZE = 16192k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:64k(u-boot)ro,64k(art)ro,16192k(firmware),64k(art-backup)ro
 endef
 TARGET_DEVICES += cf-e316n-v2
@@ -49,7 +56,6 @@ define Device/cf-e380ac-v1
   DEVICE_PACKAGES := kmod-usb-core kmod-usb2 kmod-ath10k ath10k-firmware-qca988x
   BOARDNAME = CF-E380AC-V1
   IMAGE_SIZE = 16128k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:128k(u-boot)ro,64k(art)ro,16128k(firmware),64k(art-backup)ro
 endef
 TARGET_DEVICES += cf-e380ac-v1
@@ -68,7 +74,6 @@ define Device/cf-e520n
   DEVICE_PACKAGES := kmod-usb-core kmod-usb2
   BOARDNAME = CF-E520N
   IMAGE_SIZE = 8000k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:64k(u-boot)ro,64k(art)ro,8000k(firmware),64k(art-backup)ro
 endef
 TARGET_DEVICES += cf-e520n
@@ -79,6 +84,14 @@ define Device/cf-e530n
   BOARDNAME = CF-E530N
 endef
 TARGET_DEVICES += cf-e530n
+
+define Device/cpe505n
+  DEVICE_TITLE := P&W CPE505N
+  BOARDNAME = CPE505N
+  IMAGE_SIZE = 16000k
+  MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,16000k(firmware),64k(art)ro
+endef
+TARGET_DEVICES += cpe505n
 
 define Device/cpe830
   $(Device/ap90q)
@@ -93,7 +106,6 @@ define Device/cpe870
   DEVICE_PACKAGES := rssileds
   BOARDNAME = CPE870
   IMAGE_SIZE = 7936k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:64k(u-boot)ro,64k(u-boot-env),7936k(firmware),64k(config)ro,64k(art)ro
 endef
 TARGET_DEVICES += cpe870
@@ -133,7 +145,6 @@ define Device/gl-ar300
   DEVICE_PACKAGES := kmod-usb-core kmod-usb2
   BOARDNAME = GL-AR300
   IMAGE_SIZE = 16000k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,16000k(firmware),64k(art)ro
 endef
 TARGET_DEVICES += gl-ar300
@@ -143,7 +154,6 @@ define Device/gl-ar300m
   DEVICE_PACKAGES := kmod-usb-core kmod-usb2 uboot-envtools
   BOARDNAME = GL-AR300M
   IMAGE_SIZE = 16000k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env),16000k(firmware),64k(art)ro
 endef
 TARGET_DEVICES += gl-ar300m
@@ -167,6 +177,15 @@ define Device/gl-mifi
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,16000k(firmware),64k(art)ro
 endef
 TARGET_DEVICES += gl-mifi
+
+define Device/lima
+  DEVICE_TITLE := Lima board from 8Devices
+  DEVICE_PACKAGES := kmod-usb-core kmod-usb2
+  BOARDNAME = LIMA
+  IMAGE_SIZE = 15616k
+  MTDPARTS = spi0.0:256k(u-boot)ro,256k(u-boot-env)ro,256k(art)ro,-(firmware)
+endef
+TARGET_DEVICES += lima
 
 define Device/mr12
   DEVICE_TITLE := Meraki MR12
@@ -220,7 +239,7 @@ define Device/wndr3700
 endef
 
 define Device/wndr3700v2
-$(Device/wndr3700)
+  $(Device/wndr3700)
   DEVICE_TITLE := NETGEAR WNDR3700 v2
   NETGEAR_BOARD_ID = WNDR3700v2
   NETGEAR_KERNEL_MAGIC = 0x33373031
@@ -231,26 +250,26 @@ $(Device/wndr3700)
 endef
 
 define Device/wndr3800
-$(Device/wndr3700v2)
+  $(Device/wndr3700v2)
   DEVICE_TITLE := NETGEAR WNDR3800
   NETGEAR_BOARD_ID = WNDR3800
   NETGEAR_HW_ID = 29763654+16+128
 endef
 
 define Device/wndr3800ch
-$(Device/wndr3800)
+  $(Device/wndr3800)
   DEVICE_TITLE := NETGEAR WNDR3800 (Ch)
   NETGEAR_BOARD_ID = WNDR3800CH
 endef
 
 define Device/wndrmac
-$(Device/wndr3700v2)
+  $(Device/wndr3700v2)
   DEVICE_TITLE := NETGEAR WNDRMAC
   NETGEAR_BOARD_ID = WNDRMAC
 endef
 
 define Device/wndrmacv2
-$(Device/wndr3800)
+  $(Device/wndr3800)
   DEVICE_TITLE := NETGEAR WNDRMAC v2
   NETGEAR_BOARD_ID = WNDRMACv2
 endef
@@ -415,6 +434,15 @@ define Device/jwap230
 endef
 TARGET_DEVICES += jwap230
 
+define Device/r602n
+  DEVICE_TITLE := P&W R602N
+  DEVICE_PACKAGES := kmod-usb-core kmod-usb2
+  BOARDNAME = R602N
+  IMAGE_SIZE = 16000k
+  MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,16000k(firmware),64k(art)ro
+endef
+TARGET_DEVICES += r602n
+
 define Device/rnx-n360rt
   $(Device/tplink-4m)
   DEVICE_TITLE := Rosewill RNX-N360RT
@@ -427,7 +455,7 @@ TARGET_DEVICES += rnx-n360rt
 
 define Device/mc-mac1200r
   $(Device/tplink-8mlzma)
-  DEVICE_TITLE := MERCURY MAC1200R
+  DEVICE_TITLE := Mercury MAC1200R
   DEVICE_PACKAGES := kmod-ath10k ath10k-firmware-qca988x
   BOARDNAME := MC-MAC1200R
   DEVICE_PROFILE := MAC1200R
@@ -480,7 +508,6 @@ define Device/sc1750
   DEVICE_PACKAGES := kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-ledtrig-usbport
   BOARDNAME = SC1750
   IMAGE_SIZE = 15744k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env),15744k(firmware),128k(APConfig),128k(kplog),64k(ART)
 endef
 TARGET_DEVICES += sc1750
@@ -490,7 +517,6 @@ define Device/sc300m
   DEVICE_PACKAGES := kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-ledtrig-usbport
   BOARDNAME = SC300M
   IMAGE_SIZE = 15744k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env),15744k(firmware),128k(APConfig),128k(kplog),64k(ART)
 endef
 TARGET_DEVICES += sc300m
@@ -500,7 +526,6 @@ define Device/sc450
   DEVICE_PACKAGES := kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-ledtrig-usbport
   BOARDNAME = SC450
   IMAGE_SIZE = 15744k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env),15744k(firmware),128k(APConfig),128k(kplog),64k(ART)
 endef
 TARGET_DEVICES += sc450
@@ -530,7 +555,6 @@ define Device/sr3200
   DEVICE_PACKAGES := kmod-usb-core kmod-usb2 kmod-ath10k ath10k-firmware-qca988x
   BOARDNAME = SR3200
   IMAGE_SIZE = 16000k
-  CONSOLE = ttyS0,115200
   MTDPARTS = spi0.0:256k(u-boot)ro,64k(u-boot-env),16000k(firmware),64k(art)ro
 endef
 TARGET_DEVICES += sr3200
@@ -648,7 +672,6 @@ define Build/seama-seal
 endef
 
 define Device/seama
-  CONSOLE := ttyS0,115200
   LOADER_TYPE := bin
   BLOCKSIZE := 64k
   KERNEL := kernel-bin | patch-cmdline | relocate-kernel | lzma
@@ -672,7 +695,7 @@ define Device/seama
 endef
 
 define Device/dir-869-a1
-$(Device/seama)
+  $(Device/seama)
   DEVICE_TITLE := D-Link DIR-869 rev. A1
   DEVICE_PACKAGES := kmod-ath10k ath10k-firmware-qca988x
   BOARDNAME = DIR-869-A1
@@ -686,7 +709,7 @@ $(Device/seama)
 endef
 
 define Device/mynet-n600
-$(Device/seama)
+  $(Device/seama)
   DEVICE_TITLE := Western Digital My Net N600
   DEVICE_PACKAGES := kmod-usb-core kmod-usb2
   BOARDNAME = MYNET-N600
@@ -696,7 +719,7 @@ $(Device/seama)
 endef
 
 define Device/mynet-n750
-$(Device/seama)
+  $(Device/seama)
   DEVICE_TITLE := Western Digital My Net N750
   DEVICE_PACKAGES := kmod-usb-core kmod-usb2
   BOARDNAME = MYNET-N750
@@ -706,7 +729,7 @@ $(Device/seama)
 endef
 
 define Device/qihoo-c301
-$(Device/seama)
+  $(Device/seama)
   DEVICE_TITLE := Qihoo C301
   DEVICE_PACKAGES :=  kmod-usb-core kmod-usb2 kmod-usb-ledtrig-usbport kmod-ath10k ath10k-firmware-qca988x
   BOARDNAME = QIHOO-C301
@@ -763,6 +786,42 @@ define Device/bhr-4grv2
   MTDPARTS := spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,14528k(rootfs),1472k(kernel),64k(art)ro,16000k@0x50000(firmware)
   IMAGES := sysupgrade.bin factory.bin
   IMAGE/sysupgrade.bin = append-rootfs | pad-rootfs | pad-to $$$$(ROOTFS_SIZE) | append-kernel | check-size $$$$(IMAGE_SIZE)
-  IMAGE/factory.bin = append-kernel | pad-to $$$$(KERNEL_SIZE) | append-rootfs | mkbuffaloimg
+  IMAGE/factory.bin = append-kernel | pad-to $$$$(KERNEL_SIZE) | append-rootfs | pad-rootfs | mkbuffaloimg
 endef
 TARGET_DEVICES += bhr-4grv2
+
+define Device/wpj342
+  DEVICE_TITLE := Compex WPJ342 (16MB flash)
+  DEVICE_PACKAGES := kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-ledtrig-usbport
+  BOARDNAME := WPJ342
+  MTDPARTS := spi0.0:192k(u-boot)ro,16128k(firmware),64k(art)ro
+  IMAGE_SIZE := 16128k
+endef
+TARGET_DEVICES += wpj342
+
+define Device/wpj344
+  DEVICE_TITLE := Compex WPJ344 (16MB flash)
+  DEVICE_PACKAGES := kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-ledtrig-usbport
+  BOARDNAME := WPJ344
+  MTDPARTS := spi0.0:192k(u-boot)ro,16128k(firmware),64k(art)ro
+  IMAGE_SIZE := 16128k
+endef
+TARGET_DEVICES += wpj344
+
+define Device/wpj531
+  DEVICE_TITLE := Compex WPJ531 (16MB flash)
+  DEVICE_PACKAGES := kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-ledtrig-usbport
+  BOARDNAME := WPJ531
+  MTDPARTS := spi0.0:192k(u-boot)ro,16128k(firmware),64k(art)ro
+  IMAGE_SIZE := 16128k
+endef
+TARGET_DEVICES += wpj531
+
+define Device/wpj558
+  DEVICE_TITLE := Compex WPJ558 (16MB flash)
+  DEVICE_PACKAGES := kmod-usb-core kmod-usb-ohci kmod-usb2 kmod-usb-ledtrig-usbport
+  BOARDNAME := WPJ558
+  MTDPARTS := spi0.0:192k(u-boot)ro,16128k(firmware),64k(art)ro
+  IMAGE_SIZE := 16128k
+endef
+TARGET_DEVICES += wpj558

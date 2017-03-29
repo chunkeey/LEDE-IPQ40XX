@@ -474,6 +474,12 @@ define Device/ARV7519RW22
 endef
 TARGET_DEVICES += ARV7519RW22
 
+define Device/ASL56026
+  IMAGE_SIZE := 7488k
+  DEVICE_TITLE := BT OpenReach - ECI VDSL Modem V-2FUb/I
+endef
+TARGET_DEVICES += ASL56026
+
 define Device/BTHOMEHUBV5A
   $(Device/NAND)
   DEVICE_TITLE := BT Home Hub 5A
@@ -515,7 +521,7 @@ TARGET_DEVICES += FRITZ7360SL
 
 define Device/VG3503J
   IMAGE_SIZE := 8000k
-  DEVICE_TITLE := BT OpenReach - ECI VDSL Modem
+  DEVICE_TITLE := BT OpenReach - ECI VDSL Modem V-2FUb/R
 endef
 TARGET_DEVICES += VG3503J
 
@@ -524,7 +530,7 @@ include tp-link.mk
 define Device/WBMR300
   IMAGE_SIZE := 15616k
   DEVICE_TITLE := Buffalo WBMR-300HPD
-  DEVICE_PACKAGES := kmod-mt76 wpad-mini kmod-usb-dwc2
+  DEVICE_PACKAGES := kmod-mt7603 wpad-mini kmod-usb-dwc2
 endef
 TARGET_DEVICES += WBMR300
 
@@ -538,9 +544,9 @@ TARGET_DEVICES += VGV7510KW22NOR
 define Device/VGV7510KW22BRN
   $(Device/lantiqBrnImage)
   IMAGE_SIZE := 7168k
-  SIGNATURE := 5D00008000
+  SIGNATURE := BRNDA6431
   MAGIC := 0x12345678
-  CRC32_POLY := 0x2083b8ed
+  CRC32_POLY := 0x04c11db7
   DEVICE_TITLE := o2 Box 6431 / Arcadyan VGV7510KW22 (BRN)
   DEVICE_PACKAGES := kmod-rt2800-pci wpad-mini kmod-usb-dwc2 kmod-ltq-tapi kmod-ltq-vmmc
 endef

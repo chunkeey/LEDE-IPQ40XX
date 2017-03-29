@@ -112,6 +112,9 @@ ramips_board_detect() {
 	*"D105")
 		name="d105"
 		;;
+	*"D240")
+		name="d240"
+		;;
 	*"DAP-1350")
 		name="dap-1350"
 		;;
@@ -181,8 +184,14 @@ ramips_board_detect() {
 	*"ESR-9753")
 		name="esr-9753"
 		;;
+	*"EW1200")
+		name="ew1200"
+		;;
 	*"EX2700")
 		name="ex2700";
+		;;
+	*"EX3700")
+		name="ex3700"
 		;;
 	*"F5D8235 v1")
 		name="f5d8235-v1"
@@ -214,11 +223,17 @@ ramips_board_detect() {
 	*"HC5661")
 		name="hc5661"
 		;;
+	*"HC5661A")
+		name="hc5661a"
+		;;
 	*"HC5761")
 		name="hc5761"
 		;;
 	*"HC5861")
 		name="hc5861"
+		;;
+	*"HC5962")
+		name="hc5962"
 		;;
 	*"HG255D")
 		name="hg255d"
@@ -400,6 +415,9 @@ ramips_board_detect() {
 	*"Q7")
 		name="zte-q7"
 		;;
+	*"R6220")
+		name="r6220"
+		;;
 	*"RB750Gr3")
 		name="rb750gr3"
 		;;
@@ -498,6 +516,9 @@ ramips_board_detect() {
 		;;
 	*"W502U")
 		name="w502u"
+		;;
+	*"WCR-1166DS")
+		name="wcr-1166ds"
 		;;
 	*"WCR-150GN")
 		name="wcr-150gn"
@@ -624,6 +645,9 @@ ramips_board_detect() {
 		;;
 	*"ZBT-WA05")
 		name="zbt-wa05"
+		;;
+	*"ZBT-WE2026")
+		name="zbt-we2026"
 		;;
 	*"ZBT-WE826")
 		name="zbt-we826"

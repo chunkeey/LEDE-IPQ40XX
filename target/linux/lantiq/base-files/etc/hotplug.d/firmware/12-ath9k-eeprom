@@ -5,7 +5,6 @@
 
 . /lib/functions.sh
 . /lib/functions/system.sh
-. /lib/functions/lantiq.sh
 . /lib/upgrade/nand.sh
 
 # xor multiple hex values of the same length
@@ -114,7 +113,7 @@ case "$FIRMWARE" in
 	"ath9k-eeprom-pci-0000:00:0e.0.bin" | \
 	"ath9k-eeprom-pci-0000:01:00.0.bin" | \
 	"ath9k-eeprom-pci-0000:02:00.0.bin")
-		board=$(lantiq_board_name)
+		board=$(board_name)
 
 		case "$board" in
 			ARV7518PW)
@@ -129,7 +128,7 @@ case "$FIRMWARE" in
 				;;
 			BTHOMEHUBV3A)
 				ath9k_eeprom_extract "art-copy" 0 1
-				ath9k_patch_fw_mac_crc $(macaddr_add $(mtd_get_mac_ascii uboot-env ethaddr) +2) 268
+				ath9k_patch_fw_mac_crc $(macaddr_add $(mtd_get_mac_ascii uboot_env ethaddr) +2) 268
 				;;
 			BTHOMEHUBV5A)
 				ath9k_ubi_eeprom_extract "caldata" 4096 0

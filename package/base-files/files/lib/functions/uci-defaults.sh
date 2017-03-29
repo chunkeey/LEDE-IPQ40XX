@@ -35,7 +35,7 @@ _ucidef_set_interface() {
 	json_select_object "$name"
 	json_add_string ifname "$iface"
 
-	if ! json_is_a protocol string; then
+	if ! json_is_a protocol string || [ -n "$proto" ]; then
 		case "$proto" in
 			static|dhcp|none|pppoe) : ;;
 			*)
@@ -160,7 +160,7 @@ _ucidef_finish_switch_roles() {
 					json_select ..
 				json_select ..
 
-				if [ $n_vlan -gt $n_cpu -o ${need_tag:-0} -eq 1 ]; then
+				if [ ${need_tag:-0} -eq 1 -o ${want_untag:-0} -ne 1 ]; then
 					num="${num}t"
 					device="${device}.${index}"
 				fi

@@ -41,7 +41,7 @@ struct wrgg03_header {
 
 static int mtdsplit_parse_wrgg(struct mtd_info *master,
 			       const struct mtd_partition **pparts,
-				struct mtd_part_parser_data *data)
+			       struct mtd_part_parser_data *data)
 {
 	struct wrgg03_header hdr;
 	size_t hdr_len, retlen, kernel_ent_size;
