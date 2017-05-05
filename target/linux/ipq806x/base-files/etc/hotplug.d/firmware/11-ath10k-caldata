@@ -14,6 +14,19 @@ ath10kcal_from_file() {
 		ath10kcal_die "failed to extract calibration data from $source"
 }
 
+find_mmc_part() {
+	local DEVNAME PARTNAME
+
+	if grep -q "$1" /proc/mtd; then
+		echo "" && return 0
+	fi
+
+	for DEVNAME in /sys/block/mmcblk0/mmcblk*p*; do
+		PARTNAME=$(grep PARTNAME ${DEVNAME}/uevent | cut -f2 -d'=')
+		[ "$PARTNAME" = "$1" ] && echo "/dev/$(basename $DEVNAME)" && return 0
+	done
+}
+
 ath10kcal_extract() {
 	local part=$1
 	local offset=$2
@@ -21,6 +34,8 @@ ath10kcal_extract() {
 	local mtd
 
 	mtd=$(find_mtd_chardev $part)
+	[ -n "$mtd" ] || \
+		mtd=$(find_mmc_part $part)
 	[ -n "$mtd" ] || \
 		ath10kcal_die "no mtd device found for partition $part"
 
@@ -51,12 +66,18 @@ case "$FIRMWARE" in
 	fritz4040)
 		/usr/bin/fritz_cal_extract -i 1 -s 0x400 -e 0x207 -l 12064 -o /lib/firmware/$FIRMWARE $(find_mtd_chardev "urlader_config")
 		;;
+	orbi)
+		ath10kcal_extract "0:ART" 4096 12064
+		;;
 	esac
 	;;
 "ath10k/pre-cal-ahb-a800000.wifi.bin")
 	case "$board" in
 	fritz4040)
 		/usr/bin/fritz_cal_extract -i 1 -s 0x400 -e 0x208 -l 12064 -o /lib/firmware/$FIRMWARE $(find_mtd_chardev "urlader_config")
+		;;
+	orbi)
+		ath10kcal_extract "0:ART" 20480 12064
 		;;
 	esac
 	;;
@@ -78,6 +99,9 @@ case "$FIRMWARE" in
 		;;
 	nbg6817)
 		ath10kcal_extract "0:ART" 4096 12064
+		;;
+	orbi)
+		ath10kcal_extract "0:ART" 36864 12064
 		;;
 	vr2600v)
 		ath10kcal_extract "ART" 4096 12064

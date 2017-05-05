@@ -44,6 +44,9 @@ ipq806x_board_detect() {
 	*"R7800")
 		name="r7800"
 		;;
+	*"Netgear Orbi")
+		name="orbi"
+		;;
 	*"VR2600v")
 		name="vr2600v"
 		;;
