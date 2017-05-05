@@ -1,0 +1,77 @@
+Index: linux-4.9.20/arch/arm/boot/dts/qcom-ipq4019.dtsi
+===================================================================
+--- linux-4.9.20.orig/arch/arm/boot/dts/qcom-ipq4019.dtsi
++++ linux-4.9.20/arch/arm/boot/dts/qcom-ipq4019.dtsi
+@@ -475,5 +475,72 @@
+ 					  "legacy";
+ 			status = "disabled";
+ 		};
++
++		pcie0: pci@40000000 {
++			compatible = "qcom,pcie-ipq4019";
++			reg =  <0x40000000 0xf1d
++				0x40000f20 0xa8
++				0x80000 0x2000
++				0x40100000 0x1000>;
++			reg-names = "dbi", "elbi", "parf", "config";
++			device_type = "pci";
++			linux,pci-domain = <0>;
++			bus-range = <0x00 0xff>;
++			num-lanes = <1>;
++			#address-cells = <3>;
++			#size-cells = <2>;
++
++			ranges = <0x81000000 0 0x40200000 0x40200000
++				  0 0x00100000   /* downstream I/O */
++				  0x82000000 0 0x40300000 0x40300000
++				  0 0x100000 /* non-prefetchable memory */
++				  0x82000000 0 0x40400000 0x40400000
++				  0 0x200000>; /* non-prefetchable memory */
++			interrupts = <0 141 0>;
++			interrupt-names = "msi";
++			#interrupt-cells = <1>;
++			interrupt-map-mask = <0 0 0 0x7>;
++			interrupt-map = <0 0 0 1 &intc 0 142
++					 IRQ_TYPE_LEVEL_HIGH>, /* int_a */
++					<0 0 0 2 &intc 0 143
++					 IRQ_TYPE_LEVEL_HIGH>, /* int_b */
++					<0 0 0 3 &intc 0 144
++					 IRQ_TYPE_LEVEL_HIGH>, /* int_c */
++					<0 0 0 4 &intc 0 145
++					 IRQ_TYPE_LEVEL_HIGH>; /* int_d */
++			clocks = <&gcc GCC_PCIE_AHB_CLK>,
++				 <&gcc GCC_PCIE_AXI_M_CLK>,
++				 <&gcc GCC_PCIE_AXI_S_CLK>;
++			clock-names = "ahb",
++				      "axi_m",
++				      "axi_s";
++
++			resets = <&gcc PCIE_AXI_M_ARES>,
++				 <&gcc PCIE_AXI_S_ARES>,
++				 <&gcc PCIE_PIPE_ARES>,
++				 <&gcc PCIE_AXI_M_VMIDMT_ARES>,
++				 <&gcc PCIE_AXI_S_XPU_ARES>,
++				 <&gcc PCIE_PARF_XPU_ARES>,
++				 <&gcc PCIE_PHY_ARES>,
++				 <&gcc PCIE_AXI_M_STICKY_ARES>,
++				 <&gcc PCIE_PIPE_STICKY_ARES>,
++				 <&gcc PCIE_PWR_ARES>,
++				 <&gcc PCIE_AHB_ARES>,
++				 <&gcc PCIE_PHY_AHB_ARES>;
++			reset-names = "axi_m",
++				      "axi_s",
++				      "pipe",
++				      "axi_m_vmid",
++				      "axi_s_xpu",
++				      "parf",
++				      "phy",
++				      "axi_m_sticky",
++				      "pipe_sticky",
++				      "pwr",
++				      "ahb",
++				      "phy_ahb";
++			status = "disabled";
++		};
++
+ 	};
+ };
