@@ -1,0 +1,38 @@
+Index: linux-4.9.20/arch/arm/boot/dts/qcom-ipq4019.dtsi
+===================================================================
+--- linux-4.9.20.orig/arch/arm/boot/dts/qcom-ipq4019.dtsi
++++ linux-4.9.20/arch/arm/boot/dts/qcom-ipq4019.dtsi
+@@ -392,6 +392,33 @@
+ 			};
+ 		};
+ 
++		vccq_sd0: regulator@1948000 {
++			compatible = "qcom,regulator-ipq40xx";
++			regulator-name = "SD0 VccQ";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <3000000>;
++			states = <3000000 0x3
++				  1800000 0x1>;
++			reg = <0x01948000 0x4>;
++			mask = <0x3>;
++			status = "disabled";
++		};
++
++		sdhc_1: sdhci@7824000 {
++			compatible = "qcom,sdhci-msm";
++			reg = <0x7824900 0x11c>, <0x7824000 0x800>;
++			reg-names = "hc_mem", "core_mem";
++			interrupts = <0 123 0>, <0 138 0>;
++			interrupt-names = "hc_irq", "pwr_irq";
++			qcom,bus-width = <8>;
++			qcom,max_clk = <192000000>;
++			clocks = <&gcc GCC_SDCC1_APPS_CLK>,
++				 <&gcc GCC_SDCC1_AHB_CLK>;
++			clock-names = "core_clk", "iface_clk";
++			qcom,large-address-bus;
++			status = "disabled";
++		};
++
+ 		wifi0: wifi@a000000 {
+ 			compatible = "qcom,ipq4019-wifi";
+ 			reg = <0xa000000 0x200000>;
