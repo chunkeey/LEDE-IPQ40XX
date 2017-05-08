@@ -66,7 +66,8 @@ case "$FIRMWARE" in
 	fritz4040)
 		/usr/bin/fritz_cal_extract -i 1 -s 0x400 -e 0x207 -l 12064 -o /lib/firmware/$FIRMWARE $(find_mtd_chardev "urlader_config")
 		;;
-	orbi)
+	orbi |\
+	velop)
 		ath10kcal_extract "0:ART" 4096 12064
 		;;
 	esac
@@ -76,7 +77,8 @@ case "$FIRMWARE" in
 	fritz4040)
 		/usr/bin/fritz_cal_extract -i 1 -s 0x400 -e 0x208 -l 12064 -o /lib/firmware/$FIRMWARE $(find_mtd_chardev "urlader_config")
 		;;
-	orbi)
+	orbi |\
+	velop)
 		ath10kcal_extract "0:ART" 20480 12064
 		;;
 	esac
@@ -100,7 +102,8 @@ case "$FIRMWARE" in
 	nbg6817)
 		ath10kcal_extract "0:ART" 4096 12064
 		;;
-	orbi)
+	orbi |\
+	velop)
 		ath10kcal_extract "0:ART" 36864 12064
 		;;
 	vr2600v)

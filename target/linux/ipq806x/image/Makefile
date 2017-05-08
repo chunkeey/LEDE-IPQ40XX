@@ -249,6 +249,22 @@ define Device/ORBI
 	DEVICE_PACKAGES := ath10k-firmware-qca9984 ath10k-firmware-qca4019 e2fsprogs losetup
 endef
 
+define Device/VELOP
+	$(call Device/FitImage)
+	DEVICE_DTS := qcom-ipq4019-velop
+	KERNEL_LOADADDR := 0x80208000
+	BLOCKSIZE := 4k
+	PAGESIZE := 256
+	BOARD_NAME := orbi
+	DEVICE_TITLE := Linksys Velop
+	IMAGE_SIZE := 29753344
+	IMAGES := sysupgrade.tar mmcblk0p12-kernel.bin mmcblk0p14-rootfs.bin
+	IMAGE/sysupgrade.tar/squashfs := append-rootfs | pad-to $$$${BLOCKSIZE} | sysupgrade-tar rootfs=$$$$@ | append-metadata
+	IMAGE/mmcblk0p14-rootfs.bin := append-rootfs | pad-rootfs | pad-to $$$${BLOCKSIZE}
+	IMAGE/mmcblk0p12-kernel.bin := append-kernel
+	DEVICE_PACKAGES := ath10k-firmware-qca9888 ath10k-firmware-qca4019 e2fsprogs losetup
+endef
+
 define Device/VR2600v
 	PROFILES += $$(DEVICE_NAME)
 	FILESYSTEMS := squashfs
@@ -266,7 +282,7 @@ define Device/VR2600v
 	IMAGE/sysupgrade.bin := pad-extra 512 | append-kernel | pad-to $$$${KERNEL_SIZE} | append-rootfs | pad-rootfs | append-metadata
 endef
 
-TARGET_DEVICES += AP148 AP148-legacy C2600 D7800 DB149 EA8500 FRITZ4040 ORBI
-		  R7500 R7500v2 R7800 NBG6817 VR2600v
+TARGET_DEVICES += AP148 AP148-legacy C2600 D7800 DB149 EA8500 FRITZ4040 ORBI \
+		  R7500 R7500v2 R7800 NBG6817 VELOP VR2600v
 
 $(eval $(call BuildImage))

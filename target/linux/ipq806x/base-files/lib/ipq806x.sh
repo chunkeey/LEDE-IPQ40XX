@@ -47,6 +47,9 @@ ipq806x_board_detect() {
 	*"Netgear Orbi")
 		name="orbi"
 		;;
+	*"Linksys Velop")
+		name="velop"
+		;;
 	*"VR2600v")
 		name="vr2600v"
 		;;
