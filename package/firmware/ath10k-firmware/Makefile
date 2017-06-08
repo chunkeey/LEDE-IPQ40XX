@@ -315,9 +315,6 @@ endef
 
 define Package/ath10k-firmware-qca9984/install
 	$(INSTALL_DIR) $(1)/lib/firmware/ath10k/QCA9984/hw1.0
-	ln -s \
-		../../cal-pci-0000:01:00.0.bin \
-		$(1)/lib/firmware/ath10k/QCA9984/hw1.0/board.bin
 	$(INSTALL_DATA) \
 		$(PKG_BUILD_DIR)/QCA9984/hw1.0/board-2.bin \
 		$(1)/lib/firmware/ath10k/QCA9984/hw1.0/board-2.bin
@@ -328,9 +325,6 @@ endef
 
 define Package/ath10k-firmware-qca9984-ct/install
 	$(INSTALL_DIR) $(1)/lib/firmware/ath10k/QCA9984/hw1.0
-	ln -s \
-		../../cal-pci-0000:01:00.0.bin \
-		$(1)/lib/firmware/ath10k/QCA9984/hw1.0/board.bin
 	$(INSTALL_DATA) \
 		$(PKG_BUILD_DIR)/QCA9984/hw1.0/board-2.bin \
 		$(1)/lib/firmware/ath10k/QCA9984/hw1.0/board-2.bin
