@@ -242,11 +242,18 @@ define Device/ORBI
 	BOARD_NAME := orbi
 	DEVICE_TITLE := Netgear Orbi
 	IMAGE_SIZE := 29753344
-	IMAGES := sysupgrade.tar mmcblk0p12-kernel.bin mmcblk0p14-rootfs.bin
+	KERNEL_SIZE := 3932160
+	NETGEAR_BOARD_ID := RBR50
+	NETGEAR_HW_ID := 29765352+0+4000+512+2x2+2x2+4x4
+	IMAGES := sysupgrade.tar mmcblk0p12-kernel.bin mmcblk0p14-rootfs.bin factory.bin
 	IMAGE/sysupgrade.tar/squashfs := append-rootfs | pad-to $$$${BLOCKSIZE} | sysupgrade-tar rootfs=$$$$@ | append-metadata
 	IMAGE/mmcblk0p14-rootfs.bin := append-rootfs | pad-rootfs | pad-to $$$${BLOCKSIZE}
 	IMAGE/mmcblk0p12-kernel.bin := append-kernel
-	DEVICE_PACKAGES := ath10k-firmware-qca9984 ath10k-firmware-qca4019 e2fsprogs losetup
+	IMAGE/factory.img := append-kernel | pad-offset $$$$(BLOCKSIZE) 64 | \
+		append-uImage-fakeroot-hdr | pad-to $$$$(KERNEL_SIZE) | \
+		append-rootfs | pad-rootfs | pad-to $$$${BLOCKSIZE} | \
+		netgear-dni
+	DEVICE_PACKAGES := ath10k-firmware-qca9984 ipq-wifi-rbr50 e2fsprogs losetup
 endef
 
 define Device/VELOP
