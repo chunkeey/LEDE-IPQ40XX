@@ -10,7 +10,7 @@ Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
 ---
 --- a/arch/arm/boot/dts/qcom-ipq4019.dtsi
 +++ b/arch/arm/boot/dts/qcom-ipq4019.dtsi
-@@ -132,6 +132,12 @@
+@@ -137,6 +137,12 @@
  		};
  	};
  
