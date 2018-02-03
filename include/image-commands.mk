@@ -350,6 +350,20 @@ define Build/tplink-v2-image
 	rm -rf $@.new
 endef
 
+define Build/ubi-install-script
+	sh $(TOPDIR)/scripts/ubi-install-script.sh \
+		--arch $(LINUX_KARCH) \
+		--device '$(VERSION_DIST) $(REVISION) $(DEVICE_NAME)' \
+		$(if $(CI_INITCMDS),--init-command '$(CI_INITCMDS)',) \
+		$(if $(CI_PRECMDS),--pre-create-command '$(CI_PRECMDS)',) \
+		$(if $(CI_POSTCMDS),--post-command '$(CI_POSTCMDS)',) \
+		$(if $(CI_FINALCMDS),--final-command '$(CI_FINALCMDS)',) \
+		--kernel $(call param_get_default,kernel,$(1),$(IMAGE_KERNEL)) \
+		--rootfs $(call param_get_default,rootfs,$(1),$(IMAGE_ROOTFS)) \
+		$(1) $(2) $(3) $(4) $(5) $(6) $(7) $(8) $(9) $(10) $(11) $(12) $(13) $(14) \
+		$@
+endef
+
 json_quote=$(subst ','\'',$(subst ",\",$(1)))
 #")')
 metadata_devices=$(if $(1),$(subst "$(space)","$(comma)",$(strip $(foreach v,$(1),"$(call json_quote,$(v))"))))

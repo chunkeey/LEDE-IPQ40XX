@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/image.mk
 
-DEVICE_VARS += RAS_BOARD RAS_ROOTFS_SIZE RAS_VERSION
+DEVICE_VARS += RAS_BOARD RAS_ROOTFS_SIZE RAS_VERSION CI_PRECMDS CI_POSTCMDS CI_INITCMDS
 
 define Device/Default
 	PROFILES := Default
@@ -101,7 +101,9 @@ define Device/asus_rt-ac58u
 #	to add a version... or we are very careful not to add '\0' into that
 #	string and call it a day.... Yeah, we do the latter!
 	UIMAGE_NAME:=$(shell echo -e '\03\01\01\01RT-AC58U')
-	IMAGES := sysupgrade.bin
+	CI_PRECMDS := ubi remove jffs2
+	IMAGES := sysupgrade.bin install.scr
+	IMAGE/install.scr := ubi-install-script --address 0x84000000 --ubi-partition UBI_DEV --kernel-volname linux
 	DEVICE_PACKAGES := kmod-usb-ledtrig-usbport
 endef
 TARGET_DEVICES += asus_rt-ac58u
@@ -211,7 +213,11 @@ define Device/meraki_mr33
 	BLOCKSIZE := 131072
 	PAGESIZE := 2048
 	DEVICE_TITLE := Cisco Meraki MR33
-	IMAGES = sysupgrade.bin
+	IMAGES = sysupgrade.bin install.scr
+	CI_KERNPART := part.safe
+	CI_INITCMDS := set mtdparts mtdparts=nand0:0x7000000@0xc00000(ubi)
+	CI_PRECMDS := ubi remove part.old; ubi remove storage
+	IMAGE/install.scr := ubi-install-script --address 0x84000000 --kernel-volname part.safe
 	DEVICE_PACKAGES := -swconfig ath10k-firmware-qca9887-ct
 endef
 TARGET_DEVICES += meraki_mr33
