@@ -1,0 +1,548 @@
+Index: linux-4.14.14/drivers/net/ethernet/mediatek/Kconfig
+===================================================================
+--- linux-4.14.14.orig/drivers/net/ethernet/mediatek/Kconfig
++++ linux-4.14.14/drivers/net/ethernet/mediatek/Kconfig
+@@ -14,4 +14,11 @@ config NET_MEDIATEK_SOC
+ 	  This driver supports the gigabit ethernet MACs in the
+ 	  MediaTek SoC family.
+ 
++config NET_MEDIATEK_OFFLOAD
++	tristate "HW Offload support"
++	depends on NET_MEDIATEK_SOC
++	---help---
++	  This driver supports the Hardware Offloading feature of the
++	  MediaTek SoC family.
++
+ endif #NET_VENDOR_MEDIATEK
+Index: linux-4.14.14/drivers/net/ethernet/mediatek/Makefile
+===================================================================
+--- linux-4.14.14.orig/drivers/net/ethernet/mediatek/Makefile
++++ linux-4.14.14/drivers/net/ethernet/mediatek/Makefile
+@@ -3,3 +3,4 @@
+ #
+ 
+ obj-$(CONFIG_NET_MEDIATEK_SOC)			+= mtk_eth_soc.o
++obj-$(CONFIG_NET_MEDIATEK_OFFLOAD)		+= mtk_hw_offload.o
+Index: linux-4.14.14/drivers/net/ethernet/mediatek/mtk_hw_offload.c
+===================================================================
+--- /dev/null
++++ linux-4.14.14/drivers/net/ethernet/mediatek/mtk_hw_offload.c
+@@ -0,0 +1,388 @@
++/*   This program is free software; you can redistribute it and/or modify
++ *   it under the terms of the GNU General Public License as published by
++ *   the Free Software Foundation; version 2 of the License
++ *
++ *   This program is distributed in the hope that it will be useful,
++ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *   GNU General Public License for more details.
++ *
++ *   Copyright (C) 2014-2016 Sean Wang <sean.wang@mediatek.com>
++ *   Copyright (C) 2016-2017 John Crispin <blogic@openwrt.org>
++ */
++
++#include <linux/dma-mapping.h>
++#include <linux/delay.h>
++#include <linux/if.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/reset.h>
++
++#include "mtk_eth_soc.h"
++
++#define MTK_REG_PPE_GLO_CFG			0xe00
++#define   MTK_PPE_GLO_CFG_BUSY			BIT(31)
++#define   MTK_PPE_GLO_CFG_TTL0_DROP		BIT(4)
++#define   MTK_PPE_GLO_CFG_EN			BIT(0)
++
++#define MTK_REG_PPE_FLOW_CFG			0xe04
++#define   MTK_PPE_FLOW_CFG_IPV4_GREK_EN		BIT(19)
++#define   MTK_PPE_FLOW_CFG_IPV4_NAT_FRAG_EN	BIT(17)
++#define   MTK_PPE_FLOW_CFG_IPV4_NAPT_EN		BIT(13)
++#define   MTK_PPE_FLOW_CFG_IPV4_NAT_EN		BIT(12)
++#define   MTK_PPE_FLOW_CFG_FUC_FOE		BIT(2)
++#define   MTK_PPE_FLOW_CFG_FMC_FOE		BIT(1)
++
++#define MTK_REG_PPE_IP_PROT_CHK			0xe08
++
++#define MTK_REG_PPE_TB_BASE			0xe20
++
++#define MTK_REG_PPE_BNDR			0xe28
++#define   MTK_PPE_BNDR_RATE_MASK		0xffff
++
++#define MTK_REG_PPE_BIND_LMT_0			0xe2C
++
++#define MTK_REG_PPE_BIND_LMT_1			0xe30
++#define   MTK_PPE_NTU_KA			BIT(16)
++
++#define MTK_REG_PPE_KA				0xe34
++#define   MTK_PPE_KA_T				BIT(0)
++#define   MTK_PPE_KA_TCP			BIT(16)
++#define   MTK_PPE_KA_UDP			BIT(24)
++
++#define MTK_REG_PPE_UNB_AGE			0xe38
++#define   MTK_PPE_UNB_AGE_MNP_MASK		(0xffff << 16)
++#define   MTK_PPE_UNB_AGE_MNP			(1000 << 16)
++#define   MTK_PPE_UNB_AGE_DLTA_MASK		0xff
++#define   MTK_PPE_UNB_AGE_DLTA			3
++
++#define MTK_REG_PPE_BND_AGE0			0xe3c
++#define   MTK_PPE_BND_AGE0_NTU_DLTA_MASK	(0xffff << 16)
++#define   MTK_PPE_BND_AGE0_NTU_DLTA		(5 << 16)
++#define   MTK_PPE_BND_AGE0_UDP_DLTA_MASK	0xffff
++#define   MTK_PPE_BND_AGE0_UDP_DLTA		5
++
++#define MTK_REG_PPE_BND_AGE1			0xe40
++#define   MTK_PPE_BND_AGE1_FIN_DLTA_MASK	(0xffff << 16)
++#define   MTK_PPE_BND_AGE1_FIN_DLTA		(5 << 16)
++#define   MTK_PPE_BND_AGE1_TCP_DLTA_MASK	0xffff
++#define   MTK_PPE_BND_AGE1_TCP_DLTA		5
++
++#define MTK_REG_PPE_DFT_CPORT			0x48
++
++#define MTK_REG_PPE_TB_CFG			0xe1c
++#define   MTK_PPE_TB_CFG_X_MODE_MASK		(3 << 18)
++#define   MTK_PPE_TB_CFG_HASH_MODE1		BIT(14)
++#define   MTK_PPE_TB_CFG_HASH_MODE_MASK		(0x3 << 14)
++#define   MTK_PPE_TB_CFG_KA			(3 << 12)
++#define   MTK_PPE_TB_CFG_KA_MASK		(0x3 << 12)
++#define   MTK_PPE_TB_CFG_FIN_AGE		BIT(11)
++#define   MTK_PPE_TB_CFG_UDP_AGE		BIT(10)
++#define   MTK_PPE_TB_CFG_TCP_AGE		BIT(9)
++#define   MTK_PPE_TB_CFG_UNBD_AGE		BIT(8)
++#define   MTK_PPE_TB_CFG_NTU_AGE		BIT(7)
++#define   MTK_PPE_TB_CFG_SMA_FWD_CPU		3
++#define   MTK_PPE_TB_CFG_SMA_MASK		(0x3 << 4)
++#define   MTK_PPE_TB_CFG_ENTRY_SZ_64B		0
++#define   MTK_PPE_TB_CFG_ENTRY_SZ_MASK		BIT(3)
++#define   MTK_PPE_TB_CFG_TBL_SZ_4K		2
++#define   MTK_PPE_TB_CFG_TBL_SZ_MASK		0x7
++
++#define MTK_REG_PPE_HASH_SEED			0xe44
++#define   MTK_PPE_HASH_SEED			0x12345678
++
++
++#define MTK_REG_PPE_CAH_CTRL			0xf20
++#define   MTK_PPE_CAH_CTRL_X_MODE		BIT(9)
++#define   MTK_PPE_CAH_CTRL_EN			BIT(0)
++
++struct mtk_foe_unbind_info_blk {
++	u32 time_stamp:8;
++	u32 pcnt:16;		/* packet count */
++	u32 preb:1;
++	u32 pkt_type:3;
++	u32 state:2;
++	u32 udp:1;
++	u32 sta:1;		/* static entry */
++} __attribute__ ((packed));
++
++struct mtk_foe_bind_info_blk {
++	u32 time_stamp:15;
++	u32 ka:1;		/* keep alive */
++	u32 vlan_layer:3;
++	u32 psn:1;		/* egress packet has PPPoE session */
++	u32 vpm:1;		/* 0:ethertype remark, 1:0x8100(CR default) */
++	u32 ps:1;		/* packet sampling */
++	u32 cah:1;		/* cacheable flag */
++	u32 rmt:1;		/* remove tunnel ip header (6rd/dslite only) */
++	u32 ttl:1;
++	u32 pkt_type:3;
++	u32 state:2;
++	u32 udp:1;
++	u32 sta:1;		/* static entry */
++} __attribute__ ((packed));
++
++struct mtk_foe_info_blk2 {
++	u32 qid:4;		/* QID in Qos Port */
++	u32 fqos:1;		/* force to PSE QoS port */
++	u32 dp:3;		/* force to PSE port x 
++				 0:PSE,1:GSW, 2:GMAC,4:PPE,5:QDMA,7=DROP */
++	u32 mcast:1;		/* multicast this packet to CPU */
++	u32 pcpl:1;		/* OSBN */
++	u32 mlen:1;		/* 0:post 1:pre packet length in meter */
++	u32 alen:1;		/* 0:post 1:pre packet length in accounting */
++	u32 port_mg:6;		/* port meter group */
++	u32 port_ag:6;		/* port account group */
++	u32 dscp:8;		/* DSCP value */
++} __attribute__ ((packed));
++
++struct mtk_foe_ipv4_hnapt {
++	union {
++		struct mtk_foe_bind_info_blk bfib1;
++		struct mtk_foe_unbind_info_blk udib1;
++		u32 info_blk1;
++	};
++	u32 sip;
++	u32 dip;
++	u16 dport;
++	u16 sport;
++	union {
++		struct mtk_foe_info_blk2 iblk2;
++		u32 info_blk2;
++	};
++	u32 new_sip;
++	u32 new_dip;
++	u16 new_dport;
++	u16 new_sport;
++	u32 resv1;
++	u32 resv2;
++	u32 resv3:26;
++	u32 act_dp:6;		/* UDF */
++	u16 vlan1;
++	u16 etype;
++	u32 dmac_hi;
++	u16 vlan2;
++	u16 dmac_lo;
++	u32 smac_hi;
++	u16 pppoe_id;
++	u16 smac_lo;
++} __attribute__ ((packed));
++
++struct mtk_foe_entry {
++	union {
++		struct mtk_foe_unbind_info_blk udib1;
++		struct mtk_foe_bind_info_blk bfib1;
++		struct mtk_foe_ipv4_hnapt ipv4_hnapt;
++	};
++};
++
++enum mtk_foe_entry_state {
++	FOE_STATE_INVALID = 0,
++	FOE_STATE_UNBIND = 1,
++	FOE_STATE_BIND = 2,
++	FOE_STATE_FIN = 3
++};
++
++/* our table size is 4K */
++#define MTK_PPE_ENTRY_CNT		0x1000
++#define MTK_PPE_TBL_SZ			\
++			(MTK_PPE_ENTRY_CNT * sizeof(struct mtk_foe_entry))
++
++static int mtk_ppe_start(struct mtk_eth *eth)
++{
++	/* map the FOE table */
++	eth->foe_table = dma_alloc_coherent(eth->dev, MTK_PPE_TBL_SZ,\
++				&eth->foe_table_phys, GFP_KERNEL);
++	if (!eth->foe_table) {
++		dev_err(eth->dev, "failed to allocate foe table\n");
++		return -ENOMEM;
++	}
++
++	/* tell the PPE about the tables base address */
++	mtk_w32(eth, eth->foe_table_phys, MTK_REG_PPE_TB_BASE);
++
++	/* flush the table */
++	memset(eth->foe_table, 0, MTK_PPE_TBL_SZ);
++
++	/* setup hashing */
++	mtk_m32(eth,
++		MTK_PPE_TB_CFG_HASH_MODE_MASK | MTK_PPE_TB_CFG_TBL_SZ_MASK,
++		MTK_PPE_TB_CFG_HASH_MODE1 | MTK_PPE_TB_CFG_TBL_SZ_4K,
++		MTK_REG_PPE_TB_CFG);
++
++	/* set the default hashing seed */
++	mtk_w32(eth, MTK_PPE_HASH_SEED, MTK_REG_PPE_HASH_SEED);
++
++	/* each foe entry is 64bytes and is setup by cpu forwarding*/
++	mtk_m32(eth, MTK_PPE_CAH_CTRL_X_MODE | MTK_PPE_TB_CFG_ENTRY_SZ_MASK |
++		MTK_PPE_TB_CFG_SMA_MASK,
++		MTK_PPE_TB_CFG_ENTRY_SZ_64B |  MTK_PPE_TB_CFG_SMA_FWD_CPU,
++		MTK_REG_PPE_TB_CFG);
++
++	/* set ip proto */
++	mtk_w32(eth, 0xFFFFFFFF, MTK_REG_PPE_IP_PROT_CHK);
++
++	/* setup caching */
++	mtk_m32(eth, 0, MTK_PPE_CAH_CTRL_X_MODE, MTK_REG_PPE_CAH_CTRL);
++	mtk_m32(eth, MTK_PPE_CAH_CTRL_X_MODE, MTK_PPE_CAH_CTRL_EN,
++		MTK_REG_PPE_CAH_CTRL);
++
++	/* enable FOE */
++	mtk_m32(eth, 0, MTK_PPE_FLOW_CFG_IPV4_NAT_FRAG_EN |
++		MTK_PPE_FLOW_CFG_IPV4_NAPT_EN | MTK_PPE_FLOW_CFG_IPV4_NAT_EN |
++		MTK_PPE_FLOW_CFG_IPV4_GREK_EN,
++		MTK_REG_PPE_FLOW_CFG);
++
++	/* setup flow entry un/bind aging */
++	mtk_m32(eth, 0,
++		MTK_PPE_TB_CFG_UNBD_AGE | MTK_PPE_TB_CFG_NTU_AGE |
++		MTK_PPE_TB_CFG_FIN_AGE | MTK_PPE_TB_CFG_UDP_AGE |
++		MTK_PPE_TB_CFG_TCP_AGE,
++		MTK_REG_PPE_TB_CFG);
++
++	mtk_m32(eth, MTK_PPE_UNB_AGE_MNP_MASK | MTK_PPE_UNB_AGE_DLTA_MASK,
++		MTK_PPE_UNB_AGE_MNP | MTK_PPE_UNB_AGE_DLTA,
++		MTK_REG_PPE_UNB_AGE);
++	mtk_m32(eth, MTK_PPE_BND_AGE0_NTU_DLTA_MASK |
++		MTK_PPE_BND_AGE0_UDP_DLTA_MASK,
++		MTK_PPE_BND_AGE0_NTU_DLTA | MTK_PPE_BND_AGE0_UDP_DLTA,
++		MTK_REG_PPE_BND_AGE0);
++	mtk_m32(eth, MTK_PPE_BND_AGE1_FIN_DLTA_MASK |
++		MTK_PPE_BND_AGE1_TCP_DLTA_MASK,
++		MTK_PPE_BND_AGE1_FIN_DLTA | MTK_PPE_BND_AGE1_TCP_DLTA,
++		MTK_REG_PPE_BND_AGE1);
++
++	/* setup flow entry keep alive */
++	mtk_m32(eth, MTK_PPE_TB_CFG_KA_MASK, MTK_PPE_TB_CFG_KA,
++		MTK_REG_PPE_TB_CFG);
++	mtk_w32(eth, MTK_PPE_KA_UDP | MTK_PPE_KA_TCP | MTK_PPE_KA_T, MTK_REG_PPE_KA);
++
++	/* setup flow entry rate limit */
++	mtk_w32(eth, (0x3fff << 16) | 0x3fff, MTK_REG_PPE_BIND_LMT_0);
++	mtk_w32(eth, MTK_PPE_NTU_KA | 0x3fff, MTK_REG_PPE_BIND_LMT_1);
++	mtk_m32(eth, MTK_PPE_BNDR_RATE_MASK, 1, MTK_REG_PPE_BNDR);
++
++	/* enable the PPE */
++	mtk_m32(eth, 0, MTK_PPE_GLO_CFG_EN, MTK_REG_PPE_GLO_CFG);
++
++	/* set the default forwarding port to PDMA */
++	mtk_w32(eth, 0, MTK_REG_PPE_DFT_CPORT);
++
++	/* drop packets with TTL=0 */
++	mtk_m32(eth, 0, MTK_PPE_GLO_CFG_TTL0_DROP, MTK_REG_PPE_GLO_CFG);
++
++	/* send all traffic from gmac tot he ppe */
++	mtk_m32(eth, 0xffff, 0x4444, MTK_GDMA_FWD_CFG(0));
++	mtk_m32(eth, 0xffff, 0x4444, MTK_GDMA_FWD_CFG(1));
++
++	dev_info(eth->dev, "PPE started\n");
++
++	return 0;
++}
++
++static int mtk_ppe_busy_wait(struct mtk_eth *eth)
++{
++	unsigned long t_start = jiffies;
++	u32 r = 0;
++
++	while (1) {
++		r = mtk_r32(eth, MTK_REG_PPE_GLO_CFG);
++		if (!(r & MTK_PPE_GLO_CFG_BUSY))
++			return 0;
++		if (time_after(jiffies, t_start + HZ))
++			break;
++		usleep_range(10, 20);
++	}
++
++	dev_err(eth->dev, "ppe: table busy timeout - resetting\n");
++	reset_control_reset(eth->rst_ppe);
++
++	return -ETIMEDOUT;
++}
++
++static int mtk_ppe_stop(struct mtk_eth *eth)
++{
++	u32 r1 = 0, r2 = 0;
++	int i;
++
++	/* discard all traffic while we disable the PPE */
++	mtk_m32(eth, 0xffff, 0x7777, MTK_GDMA_FWD_CFG(0));
++	mtk_m32(eth, 0xffff, 0x7777, MTK_GDMA_FWD_CFG(1));
++
++	if (mtk_ppe_busy_wait(eth))
++		return -ETIMEDOUT;
++
++	/* invalidate all flow table entries */
++	for (i = 0; i < MTK_PPE_ENTRY_CNT; i++)
++		eth->foe_table[i].bfib1.state = FOE_STATE_INVALID;
++
++	/* disable caching */
++	mtk_m32(eth, 0, MTK_PPE_CAH_CTRL_X_MODE, MTK_REG_PPE_CAH_CTRL);
++	mtk_m32(eth, MTK_PPE_CAH_CTRL_X_MODE | MTK_PPE_CAH_CTRL_EN, 0,
++		MTK_REG_PPE_CAH_CTRL);
++
++	/* flush cache has to be ahead of hnat diable --*/
++	mtk_m32(eth, MTK_PPE_GLO_CFG_EN, 0, MTK_REG_PPE_GLO_CFG);
++
++	/* disable FOE */
++	mtk_m32(eth,
++		MTK_PPE_FLOW_CFG_IPV4_NAT_FRAG_EN |
++		MTK_PPE_FLOW_CFG_IPV4_NAPT_EN | MTK_PPE_FLOW_CFG_IPV4_NAT_EN |
++		MTK_PPE_FLOW_CFG_FUC_FOE | MTK_PPE_FLOW_CFG_FMC_FOE,
++		0, MTK_REG_PPE_FLOW_CFG);
++
++	/* disable FOE aging */
++	mtk_m32(eth, 0,
++		MTK_PPE_TB_CFG_FIN_AGE | MTK_PPE_TB_CFG_UDP_AGE |
++		MTK_PPE_TB_CFG_TCP_AGE | MTK_PPE_TB_CFG_UNBD_AGE |
++		MTK_PPE_TB_CFG_NTU_AGE, MTK_REG_PPE_TB_CFG);
++
++	r1 = mtk_r32(eth, 0x100);
++	r2 = mtk_r32(eth, 0x10c);
++
++	dev_info(eth->dev, "0x100 = 0x%x, 0x10c = 0x%x\n", r1, r2);
++
++	if (((r1 & 0xff00) >> 0x8) >= (r1 & 0xff) ||
++	    ((r1 & 0xff00) >> 0x8) >= (r2 & 0xff)) {
++		dev_info(eth->dev, "reset pse\n");
++		mtk_w32(eth, 0x1, 0x4);
++	}
++
++	/* free the FOE table */
++	dma_free_coherent(NULL, MTK_PPE_TBL_SZ, eth->foe_table,
++			  eth->foe_table_phys);
++
++	/* set the foe entry base address to 0 */
++	mtk_w32(eth, 0, MTK_REG_PPE_TB_BASE);
++
++	if (mtk_ppe_busy_wait(eth))
++		return -ETIMEDOUT;
++
++	/* send all traffic back to the DMA engine */
++	mtk_m32(eth, 0xffff, 0x0, MTK_GDMA_FWD_CFG(0));
++	mtk_m32(eth, 0xffff, 0x0, MTK_GDMA_FWD_CFG(1));
++
++	return 0;
++}
++
++int mtk_ppe_probe(struct mtk_eth *eth)
++{
++	int err;
++
++	eth->rst_ppe = devm_reset_control_get(eth->dev, "ppe");
++	if (IS_ERR(eth->rst_ppe))
++		return PTR_ERR(eth->rst_ppe);
++
++	err = mtk_ppe_start(eth);
++	if (err)
++		return err;
++
++	return 0;
++}
++
++void mtk_ppe_remove(struct mtk_eth *eth)
++{
++	mtk_ppe_stop(eth);
++}
+Index: linux-4.14.14/arch/arm/boot/dts/mt7623.dtsi
+===================================================================
+--- linux-4.14.14.orig/arch/arm/boot/dts/mt7623.dtsi
++++ linux-4.14.14/arch/arm/boot/dts/mt7623.dtsi
+@@ -753,6 +753,7 @@
+ 			     "syscon";
+ 		reg = <0 0x1b000000 0 0x1000>;
+ 		#clock-cells = <1>;
++		#reset-cells = <1>;
+ 	};
+ 
+ 	eth: ethernet@1b100000 {
+Index: linux-4.14.14/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+===================================================================
+--- linux-4.14.14.orig/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ linux-4.14.14/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -12,9 +12,9 @@
+  *   Copyright (C) 2013-2016 Michael Lee <igvtee@gmail.com>
+  */
+ 
++#include <linux/of_net.h>
+ #include <linux/of_device.h>
+ #include <linux/of_mdio.h>
+-#include <linux/of_net.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/regmap.h>
+ #include <linux/clk.h>
+@@ -67,6 +67,18 @@ u32 mtk_r32(struct mtk_eth *eth, unsigne
+ 	return __raw_readl(eth->base + reg);
+ }
+ 
++void mtk_m32(struct mtk_eth *eth, u32 clear, u32 set, unsigned reg)
++{
++	u32 val;
++
++	spin_lock(&eth->page_lock);
++	val = __raw_readl(eth->base + reg);
++	val &= ~clear;
++	val |= set;
++	__raw_writel(val, eth->base + reg);
++	spin_unlock(&eth->page_lock);
++}
++
+ static int mtk_mdio_busy_wait(struct mtk_eth *eth)
+ {
+ 	unsigned long t_start = jiffies;
+@@ -2661,6 +2673,9 @@ static int mtk_probe(struct platform_dev
+ 
+ 	platform_set_drvdata(pdev, eth);
+ 
++	if (MTK_HAS_CAPS(eth->soc->caps, MTK_HW_OFFLOAD))
++		mtk_ppe_probe(eth);
++
+ 	return 0;
+ 
+ err_deinit_mdio:
+@@ -2685,6 +2700,9 @@ static int mtk_remove(struct platform_de
+ 		mtk_stop(eth->netdev[i]);
+ 	}
+ 
++	if (MTK_HAS_CAPS(eth->soc->caps, MTK_HW_OFFLOAD))
++		mtk_ppe_remove(eth);
++
+ 	mtk_hw_deinit(eth);
+ 
+ 	netif_napi_del(&eth->tx_napi);
+@@ -2706,7 +2724,7 @@ static const struct mtk_soc_data mt7622_
+ };
+ 
+ static const struct mtk_soc_data mt7623_data = {
+-	.caps = MTK_GMAC1_TRGMII,
++	.caps = MTK_GMAC1_TRGMII | MTK_HW_OFFLOAD,
+ 	.required_clks = MT7623_CLKS_BITMAP
+ };
+ 
+Index: linux-4.14.14/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+===================================================================
+--- linux-4.14.14.orig/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ linux-4.14.14/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -15,6 +15,8 @@
+ #ifndef MTK_ETH_H
+ #define MTK_ETH_H
+ 
++#include <linux/netdevice.h>
++
+ #define MTK_QDMA_PAGE_SIZE	2048
+ #define	MTK_MAX_RX_LENGTH	1536
+ #define MTK_TX_DMA_BUF_LEN	0x3fff
+@@ -567,6 +569,7 @@ struct mtk_rx_ring {
+ #define MTK_GMAC2_SGMII			(BIT(10) | MTK_SGMII)
+ #define MTK_DUAL_GMAC_SHARED_SGMII	(BIT(11) | MTK_GMAC1_SGMII | \
+ 					 MTK_GMAC2_SGMII)
++#define MTK_HW_OFFLOAD			BIT(12)
+ #define MTK_HAS_CAPS(caps, _x)		(((caps) & (_x)) == (_x))
+ 
+ /* struct mtk_eth_data -	This is the structure holding all differences
+@@ -587,6 +590,7 @@ struct mtk_soc_data {
+  *			of the driver
+  * @dev:		The device pointer
+  * @base:		The mapped register i/o base
++ * @rst_ppe:		The PPE reset line
+  * @page_lock:		Make sure that register operations are atomic
+  * @tx_irq__lock:	Make sure that IRQ register operations are atomic
+  * @rx_irq__lock:	Make sure that IRQ register operations are atomic
+@@ -618,9 +622,15 @@ struct mtk_soc_data {
+  * @soc:		Holding specific data among vaious SoCs
+  */
+ 
++struct mtk_foe_entry;
++
+ struct mtk_eth {
+ 	struct device			*dev;
+ 	void __iomem			*base;
++	struct reset_control		*rst_ppe;
++	struct mtk_foe_entry		*foe_table;
++	dma_addr_t			foe_table_phys;
++
+ 	spinlock_t			page_lock;
+ 	spinlock_t			tx_irq_lock;
+ 	spinlock_t			rx_irq_lock;
+@@ -682,5 +692,9 @@ void mtk_stats_update_mac(struct mtk_mac
+ 
+ void mtk_w32(struct mtk_eth *eth, u32 val, unsigned reg);
+ u32 mtk_r32(struct mtk_eth *eth, unsigned reg);
++void mtk_m32(struct mtk_eth *eth, u32 clear, u32 set, unsigned reg);
++
++int mtk_ppe_probe(struct mtk_eth *eth);
++void mtk_ppe_remove(struct mtk_eth *eth);
+ 
+ #endif /* MTK_ETH_H */
