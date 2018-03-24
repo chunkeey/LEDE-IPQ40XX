@@ -1,0 +1,26 @@
+From: Sven Eckelmann <sven@narfation.org>
+Date: Fri, 17 Mar 2017 11:00:40 +0100
+Subject: [PATCH] ipq40xx: Disable CTAG TX VLAN offloading
+
+The driver requires the offloading to set the VLAN specific header for the
+port selection. It can therefore not be used at the same time to offload
+the setting of the VLAN header on top of essedma interface.
+
+Forwarded: no
+---
+
+diff --git a/drivers/net/ethernet/qualcomm/essedma/edma_axi.c b/drivers/net/ethernet/qualcomm/essedma/edma_axi.c
+--- a/drivers/net/ethernet/qualcomm/essedma/edma_axi.c
++++ b/drivers/net/ethernet/qualcomm/essedma/edma_axi.c
+@@ -833,9 +833,10 @@ static int edma_axi_probe(struct platform_device *pdev)
+ 		adapter[i]->edma_cinfo = edma_cinfo;
+ 		edma_netdev[i]->netdev_ops = &edma_axi_netdev_ops;
+ 		edma_netdev[i]->features = NETIF_F_HW_CSUM | NETIF_F_RXCSUM
+-				      | NETIF_F_HW_VLAN_CTAG_TX
+ 				      | NETIF_F_HW_VLAN_CTAG_RX | NETIF_F_SG |
+ 				      NETIF_F_TSO | NETIF_F_TSO6 | NETIF_F_GRO;
++		if (edma_cinfo->is_single_phy)
++			edma_netdev[i]->features |= NETIF_F_HW_VLAN_CTAG_TX;
+ 		edma_netdev[i]->hw_features = NETIF_F_HW_CSUM | NETIF_F_RXCSUM |
+ 				NETIF_F_HW_VLAN_CTAG_RX
+ 				| NETIF_F_SG | NETIF_F_TSO | NETIF_F_TSO6 |
