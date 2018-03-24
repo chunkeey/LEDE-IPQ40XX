@@ -1,0 +1,34 @@
+From: Sven Eckelmann <sven@narfation.org>
+Date: Wed, 8 Feb 2017 16:26:00 +0100
+Subject: [PATCH] ipq40xx: Fix ar40xx port separation
+
+It is currently not possible to submit (or receive) VLAN tagged frames over
+the ar40xx PHY switch and the edma ethernet device.
+
+This can be worked around by disabling enable_vlan. The separation of the
+eth0 and eth1 ports is then done by the vlan_tag information from the
+device tree. But the ar40xx PHY switch then also has to parse the word3
+port bitmap (word3) from the TDP when data was received from the CPU port
+(0).
+
+IssueID: #2857
+
+---
+ target/linux/ipq40xx/files/drivers/net/phy/ar40xx.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/phy/ar40xx.c
++++ b/drivers/net/phy/ar40xx.c
+@@ -1199,7 +1199,11 @@ ar40xx_init_port(struct ar40xx_priv *priv, int port)
+ 	ar40xx_rmw(priv, AR40XX_REG_PORT_STATUS(port),
+ 			AR40XX_PORT_AUTO_LINK_EN, 0);
+ 
+-	ar40xx_write(priv, AR40XX_REG_PORT_HEADER(port), 0);
++	/* CPU port is setting headers to limit output ports */
++	if (port == 0)
++		ar40xx_write(priv, AR40XX_REG_PORT_HEADER(port), 0x8);
++	else
++		ar40xx_write(priv, AR40XX_REG_PORT_HEADER(port), 0);
+ 
+ 	ar40xx_write(priv, AR40XX_REG_PORT_VLAN0(port), 0);
+ 

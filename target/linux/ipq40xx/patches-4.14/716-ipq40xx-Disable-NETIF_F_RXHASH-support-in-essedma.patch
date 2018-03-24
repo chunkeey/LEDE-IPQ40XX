@@ -1,0 +1,33 @@
+From: Sven Eckelmann <sven@narfation.org>
+Date: Wed, 29 Mar 2017 16:05:26 +0200
+Subject: [PATCH] ipq40xx: Disable NETIF_F_RXHASH support in essedma
+
+The NETIF_F_RXHASH requires that each skb set the hash correctly with
+skb_set_hash. essedma tries to do that but the set hash always results in
+only one used CPU when RPS is allowed for all CPUs.
+
+Disabling RXHASH works around this problem for now.
+
+IssueID: #5477
+Forwarded: no
+ Upstream author was informed via e-mail about the problem
+---
+
+diff --git a/drivers/net/ethernet/qualcomm/essedma/edma_axi.c b/drivers/net/ethernet/qualcomm/essedma/edma_axi.c
+--- a/drivers/net/ethernet/qualcomm/essedma/edma_axi.c
++++ b/drivers/net/ethernet/qualcomm/essedma/edma_axi.c
+@@ -847,10 +847,10 @@ static int edma_axi_probe(struct platform_device *pdev)
+ 					     NETIF_F_GRO;
+ 
+ #ifdef CONFIG_RFS_ACCEL
+-		edma_netdev[i]->features |=  NETIF_F_RXHASH | NETIF_F_NTUPLE;
+-		edma_netdev[i]->hw_features |=  NETIF_F_RXHASH | NETIF_F_NTUPLE;
+-		edma_netdev[i]->vlan_features |= NETIF_F_RXHASH | NETIF_F_NTUPLE;
+-		edma_netdev[i]->wanted_features |= NETIF_F_RXHASH | NETIF_F_NTUPLE;
++		edma_netdev[i]->features |=  NETIF_F_NTUPLE;
++		edma_netdev[i]->hw_features |=  NETIF_F_NTUPLE;
++		edma_netdev[i]->vlan_features |= NETIF_F_NTUPLE;
++		edma_netdev[i]->wanted_features |= NETIF_F_NTUPLE;
+ #endif
+ 		edma_set_ethtool_ops(edma_netdev[i]);
+ 
