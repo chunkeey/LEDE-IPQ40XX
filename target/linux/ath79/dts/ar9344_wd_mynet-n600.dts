@@ -1,0 +1,207 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+/dts-v1/;
+
+/* This is a DEMO file - it comes with no support, if there's anything wrong. Please fix it yourself. */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+#include "ar9344.dtsi"
+
+/ {
+	model = "Western Digital My Net N600";
+	compatible = "wd,mynet-n600", "qca,ar9344";
+
+	aliases {
+		serial0 = &uart;
+		led-boot = &power;
+		led-failsafe = &power;
+		led-running = &power;
+		led-upgrade = &power;
+	};
+
+	keys {
+		compatible = "gpio-keys-polled";
+		poll-interval = <20>;
+
+		reset {
+			label = "Reset button";
+			linux,code = <KEY_RESTART>;
+			gpios = <&gpio 16 GPIO_ACTIVE_LOW>;
+			debounce-interval = <60>;
+		};
+
+		wps {
+			label = "WPS button";
+			linux,code = <KEY_WPS_BUTTON>;
+			gpios = <&gpio 17 GPIO_ACTIVE_LOW>;
+			debounce-interval = <60>;
+		};
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		power: power {
+			label = "mynet-n600:blue:power";
+			gpios = <&gpio 11 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		wps {
+			label = "mynet-n600:blue:wps";
+			gpios = <&gpio 13 GPIO_ACTIVE_HIGH>;
+		};
+
+		wireless {
+			label = "mynet-n600:blue:wireless";
+			gpios = <&gpio 0 GPIO_ACTIVE_HIGH>;
+		};
+
+		internet {
+			label = "mynet-n600:blue:internet";
+			gpios = <&gpio 12 GPIO_ACTIVE_HIGH>;
+		};
+
+		lan1 {
+			label = "mynet-n600:green:lan1";
+			gpios = <&gpio 4 GPIO_ACTIVE_LOW>;
+		};
+
+		lan2 {
+			label = "mynet-n600:green:lan2";
+			gpios = <&gpio 3 GPIO_ACTIVE_LOW>;
+		};
+
+		lan3 {
+			label = "mynet-n600:green:lan3";
+			gpios = <&gpio 2 GPIO_ACTIVE_LOW>;
+		};
+
+		lan4 {
+			label = "mynet-n600:green:lan4";
+			gpios = <&gpio 1 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	gpio-export {
+		compatible = "gpio-export";
+
+		gpio_ext_lna0 {
+			gpio-export,name = "mynet-n600:ext:lna0";
+			gpio-export,output = <1>;
+			gpios = <&gpio 14 GPIO_ACTIVE_HIGH>;
+		};
+
+		gpio_ext_lna1 {
+			gpio-export,name = "mynet-n600:ext:lna1";
+			gpio-export,output = <1>;
+			gpios = <&gpio 15 GPIO_ACTIVE_HIGH>;
+		};
+	};
+};
+
+&ref {
+	clock-frequency = <40000000>; /* or <25000000>; */
+};
+
+&uart {
+	status = "okay";
+};
+
+&spi {
+	num-cs = <1>;
+
+	status = "okay";
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <25000000>;
+
+		/* spi0.0:256k(u-boot)ro,64k(u-boot-env)ro,64k(devdata)ro,64k(devconf)ro,15872k(firmware),64k(radiocfg)ro */
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			uboot: partition@0 {
+				label = "u-boot";
+				reg = <0x000000 0x040000>;
+				read-only;
+			};
+
+			partition@40000 {
+				label = "u-boot-env";
+				reg = <0x040000 0x010000>;
+				read-only;
+			};
+
+			nvram: partition@50000 {
+				label = "nvram";
+				reg = <0x050000 0x010000>;
+				read-only;
+			};
+
+			partition@60000 {
+				label = "devconf";
+				reg = <0x060000 0x010000>;
+				read-only;
+			};
+
+			partition@70000 {
+				label = "firmware";
+				reg = <0x070000 0x0f80000>;
+			};
+
+			art: partition@ff0000 {
+				label = "art";
+				reg = <0xff0000 0x010000>;
+				read-only;
+			};
+		};
+	};
+};
+
+&usb {
+	status = "okay";
+};
+
+&usb_phy {
+	status = "okay";
+};
+
+&pcie {
+	status = "okay";
+
+	ath9k: wifi@0,0 {
+		compatible = "pci168c,0030";
+		reg = <0x0000 0 0 0 0>;
+		qca,no-eeprom;
+	};
+};
+
+&eth0 {
+	status = "okay";
+
+	phy-mode = "mii";
+
+	/* GMAC0 is connected to the PHY4 of the internal switch */
+	phy-handle = <&swphy4>;
+
+	gmac-config {
+		device = <&gmac>;
+		switch-only-mode = <1>;
+		switch-phy-swap = <1>;
+	};
+};
+
+&eth1 {
+	status = "okay";
+};
+
+&wmac {
+	status = "okay";
+	qca,no-eeprom;
+};

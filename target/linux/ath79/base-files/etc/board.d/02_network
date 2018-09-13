@@ -45,6 +45,12 @@ ath79_setup_interfaces()
 			"0@eth1" "1:lan:1" "2:lan:4" "3:lan:3" "4:lan:2"
 		;;
 	buffalo,bhr-4grv|\
+	buffalo,wzr-hp-ag300h|\
+	wd,mynet-n600)
+		ucidef_set_interface_wan "eth1"
+		ucidef_add_switch "switch0" \
+			"0@eth0" "1:lan:4" "2:lan:3" "3:lan:2" "4:lan:1"
+		;;
 	buffalo,wzr-hp-g450h)
 		ucidef_add_switch "switch0" \
 			"0@eth0" "2:lan" "3:lan" "4:lan" "5:lan" "1:wan"
@@ -73,7 +79,7 @@ ath79_setup_interfaces()
 	dlink,dir-825-c1|\
 	dlink,dir-835-a1|\
 	dlink,dir-859-a1|\
-	tplink,tl-wr1043nd-v4)
+	tplink,tl-wr1043nd-v4|\
 		ucidef_add_switch "switch0" \
 			"0@eth0" "1:lan:4" "2:lan:3" "3:lan:2" "4:lan:1" "5:wan"
 		;;
@@ -109,7 +115,8 @@ ath79_setup_interfaces()
 	iodata,wn-ac1167dgr|\
 	iodata,wn-ac1600dgr2|\
 	iodata,wn-ag300dgr|\
-	pcs,cr5000)
+	pcs,cr5000|\
+	wd,mynet-n750)
 		ucidef_add_switch "switch0" \
 			"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan" "5:wan"
 	;;
@@ -293,6 +300,11 @@ ath79_setup_macs()
 	ubnt,routerstation-pro)
 		wan_mac=$(fconfig -s -r -d $(find_mtd_part "RedBoot config") -n ar7100_esa)
 		lan_mac=$(macaddr_add "$wan_mac" 1)
+		;;
+	wd,mynet-n600|\
+	wd,mynet-n750)
+		lan_mac=$(nvram get lanmac)
+		wan_mac=$(nvram get wanmac)
 		;;
 	wd,mynet-wifi-rangeextender)
 		lan_mac=$(nvram get et0macaddr)
