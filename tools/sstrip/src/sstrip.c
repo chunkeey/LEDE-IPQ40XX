@@ -204,8 +204,8 @@ static int getmemorysize ## CLASS (Elf ## CLASS ## _Ehdr const *ehdr, \
 	 * complete program segment header table. \
 	 */ \
 	size = EGET(ehdr->e_phoff) + EGET(ehdr->e_phnum) * sizeof *phdrs; \
-	if (size < sizeof *ehdr) \
-		size = sizeof *ehdr; \
+	if (size < ehdr->e_ehsize) \
+		size = ehdr->e_ehsize; \
  \
 	/* Then keep extending the size to include whatever data the \
 	 * program segment header table references. \
@@ -239,7 +239,6 @@ static int modifyheaders ## CLASS (Elf ## CLASS ## _Ehdr *ehdr, \
 	if (EGET(ehdr->e_shoff) >= newsize) { \
 		ESET(ehdr->e_shoff,0); \
 		ESET(ehdr->e_shnum,0); \
-		ESET(ehdr->e_shentsize,0); \
 		ESET(ehdr->e_shstrndx,0); \
 	} \
  \
