@@ -1,0 +1,161 @@
+--- a/drivers/net/ethernet/qualcomm/Kconfig
++++ b/drivers/net/ethernet/qualcomm/Kconfig
+@@ -15,6 +15,15 @@ config NET_VENDOR_QUALCOMM
+ 
+ if NET_VENDOR_QUALCOMM
+ 
++config IPQ_ESS
++	tristate "Qualcomm Atheros IPQ ESS support"
++	depends on OF
++	---help---
++	  This SPI protocol driver supports the Qualcomm Atheros QCA7000.
++
++	  To compile this driver as a module, choose M here. The module
++	  will be called qcaspi.
++
+ config QCA7000
+ 	tristate
+ 	help
+--- a/drivers/net/ethernet/qualcomm/Makefile
++++ b/drivers/net/ethernet/qualcomm/Makefile
+@@ -3,6 +3,9 @@
+ # Makefile for the Qualcomm network device drivers.
+ #
+ 
++obj-$(CONFIG_IPQ_ESS) += ipq_ess.o
++ipq_ess-objs := ipqess.o ipqess_ethtool.o
++
+ obj-$(CONFIG_QCA7000) += qca_7k_common.o
+ obj-$(CONFIG_QCA7000_SPI) += qcaspi.o
+ qcaspi-objs := qca_7k.o qca_debug.o qca_spi.o
+--- a/arch/arm/boot/dts/qcom-ipq4019.dtsi
++++ b/arch/arm/boot/dts/qcom-ipq4019.dtsi
+@@ -44,8 +44,7 @@
+ 		spi1 = &blsp1_spi2;
+ 		i2c0 = &blsp1_i2c3;
+ 		i2c1 = &blsp1_i2c4;
+-		ethernet0 = &gmac0;
+-		ethernet1 = &gmac1;
++		ethernet0 = &gmac;
+ 	};
+ 
+ 	cpus {
+@@ -389,6 +388,53 @@
+ 			reg = <0x4ab000 0x4>;
+ 		};
+ 
++		gmac: edma@c080000 {
++			compatible = "qcom,ess-edma";
++			reg = <0xc080000 0x8000>;
++			interrupts = <GIC_SPI  65 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  66 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  67 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  68 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  69 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  70 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  71 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  72 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  73 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  74 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  75 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  76 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  77 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  78 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  79 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI  80 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 240 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 241 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 242 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 243 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 244 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 245 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 246 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 247 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 248 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 249 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 250 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 251 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 252 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 253 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 254 IRQ_TYPE_EDGE_RISING>,
++				     <GIC_SPI 255 IRQ_TYPE_EDGE_RISING>;
++
++			status = "disabled";
++
++			phy-mode = "sgmii";
++
++			fixed-link {
++				speed = <1000>;
++				full-duplex;
++				pause;
++			};
++		};
++
+ 		pcie0: pci@40000000 {
+ 			compatible = "qcom,pcie-ipq4019", "snps,dw-pcie";
+ 			reg =  <0x40000000 0xf1d
+@@ -619,64 +665,6 @@
+ 			status = "disabled";
+ 		};
+ 
+-		edma@c080000 {
+-			compatible = "qcom,ess-edma";
+-			reg = <0xc080000 0x8000>;
+-			qcom,page-mode = <0>;
+-			qcom,rx_head_buf_size = <1540>;
+-			qcom,mdio_supported;
+-			qcom,poll_required = <1>;
+-			qcom,num_gmac = <2>;
+-			interrupts = <0  65 IRQ_TYPE_EDGE_RISING
+-				      0  66 IRQ_TYPE_EDGE_RISING
+-				      0  67 IRQ_TYPE_EDGE_RISING
+-				      0  68 IRQ_TYPE_EDGE_RISING
+-				      0  69 IRQ_TYPE_EDGE_RISING
+-				      0  70 IRQ_TYPE_EDGE_RISING
+-				      0  71 IRQ_TYPE_EDGE_RISING
+-				      0  72 IRQ_TYPE_EDGE_RISING
+-				      0  73 IRQ_TYPE_EDGE_RISING
+-				      0  74 IRQ_TYPE_EDGE_RISING
+-				      0  75 IRQ_TYPE_EDGE_RISING
+-				      0  76 IRQ_TYPE_EDGE_RISING
+-				      0  77 IRQ_TYPE_EDGE_RISING
+-				      0  78 IRQ_TYPE_EDGE_RISING
+-				      0  79 IRQ_TYPE_EDGE_RISING
+-				      0  80 IRQ_TYPE_EDGE_RISING
+-				      0 240 IRQ_TYPE_EDGE_RISING
+-				      0 241 IRQ_TYPE_EDGE_RISING
+-				      0 242 IRQ_TYPE_EDGE_RISING
+-				      0 243 IRQ_TYPE_EDGE_RISING
+-				      0 244 IRQ_TYPE_EDGE_RISING
+-				      0 245 IRQ_TYPE_EDGE_RISING
+-				      0 246 IRQ_TYPE_EDGE_RISING
+-				      0 247 IRQ_TYPE_EDGE_RISING
+-				      0 248 IRQ_TYPE_EDGE_RISING
+-				      0 249 IRQ_TYPE_EDGE_RISING
+-				      0 250 IRQ_TYPE_EDGE_RISING
+-				      0 251 IRQ_TYPE_EDGE_RISING
+-				      0 252 IRQ_TYPE_EDGE_RISING
+-				      0 253 IRQ_TYPE_EDGE_RISING
+-				      0 254 IRQ_TYPE_EDGE_RISING
+-				      0 255 IRQ_TYPE_EDGE_RISING>;
+-
+-			status = "disabled";
+-
+-			gmac0: gmac0 {
+-				local-mac-address = [00 00 00 00 00 00];
+-				vlan_tag = <1 0x1f>;
+-			};
+-
+-			gmac1: gmac1 {
+-				local-mac-address = [00 00 00 00 00 00];
+-				qcom,phy_mdio_addr = <4>;
+-				qcom,poll_required = <1>;
+-				qcom,forced_speed = <1000>;
+-				qcom,forced_duplex = <1>;
+-				vlan_tag = <2 0x20>;
+-			};
+-		};
+-
+ 		usb3_ss_phy: ssphy@9a000 {
+ 			compatible = "qcom,usb-ss-ipq4019-phy";
+ 			#phy-cells = <0>;
