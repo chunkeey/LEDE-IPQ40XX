@@ -24,8 +24,8 @@ diff --git a/drivers/net/phy/ar40xx.c b/drivers/net/phy/ar40xx.c
  	ar40xx_write(priv, AR40XX_REG_PORT_FLOWCTRL_THRESH(0), t);
 +
 +	/* set service tag to 802.1q */
-+	t = ETH_P_8021Q | AR40XX_ESS_SERVICE_TAG_STAG;
-+	ar40xx_write(priv, AR40XX_ESS_SERVICE_TAG, t);
++	//t = ETH_P_8021Q | AR40XX_ESS_SERVICE_TAG_STAG;
++	//ar40xx_write(priv, AR40XX_ESS_SERVICE_TAG, t);
  }
  
  static void
@@ -34,9 +34,9 @@ diff --git a/drivers/net/phy/ar40xx.c b/drivers/net/phy/ar40xx.c
  
  	if (priv->vlan) {
 -		egress = AR40XX_PORT_VLAN1_OUT_MODE_UNMOD;
-+		if (priv->vlan_tagged & BIT(port))
-+			egress = AR40XX_PORT_VLAN1_OUT_MODE_TAG;
-+		else
++		//if (priv->vlan_tagged & BIT(port))
++		//	egress = AR40XX_PORT_VLAN1_OUT_MODE_TAG;
++		//else
 +			egress = AR40XX_PORT_VLAN1_OUT_MODE_UNMOD;
 +
  		ingress = AR40XX_IN_SECURE;
@@ -50,14 +50,14 @@ diff --git a/drivers/net/phy/ar40xx.c b/drivers/net/phy/ar40xx.c
 -	t |= egress << AR40XX_PORT_VLAN1_OUT_MODE_S;
 +	t = egress << AR40XX_PORT_VLAN1_OUT_MODE_S;
 +
-+	/* set CPU port to core port */
-+	if (port == 0)
-+		t |= AR40XX_PORT_VLAN1_CORE_PORT;
++	///* set CPU port to core port */
++	//if (port == 0)
++	//	t |= AR40XX_PORT_VLAN1_CORE_PORT;
 +
-+	if (priv->vlan_tagged & BIT(port))
++	//if (priv->vlan_tagged & BIT(port))
 +		t |= AR40XX_PORT_VLAN1_PORT_VLAN_PROP;
-+	else
-+		t |= AR40XX_PORT_VLAN1_PORT_TLS_MODE;
++	//else
++	//	t |= AR40XX_PORT_VLAN1_PORT_TLS_MODE;
 +
  	ar40xx_write(priv, AR40XX_REG_PORT_VLAN1(port), t);
  

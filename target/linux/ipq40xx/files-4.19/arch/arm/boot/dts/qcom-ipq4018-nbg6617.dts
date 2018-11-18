@@ -110,6 +110,8 @@
 
 		edma@c080000 {
 			status = "okay";
+
+			local-mac-address = [ 00 00 00 00 00 00 ]; /* filled by u-boot */
 		};
 	};
 
