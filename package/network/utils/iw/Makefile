@@ -38,8 +38,7 @@ define Package/iw-full
 endef
 
 define Build/Configure
-	echo "const char iw_version[] = \"$(PKG_VERSION)\";" > $(PKG_BUILD_DIR)/version.c
-	echo "#!/bin/sh" > $(PKG_BUILD_DIR)/version.sh
+	echo -e "##!/bin/sh\necho \"const char iw_version[] = \\\"$(PKG_VERSION)\\\";\" > version.c" > $(PKG_BUILD_DIR)/version.sh
 	chmod +x $(PKG_BUILD_DIR)/version.sh
 endef
 
