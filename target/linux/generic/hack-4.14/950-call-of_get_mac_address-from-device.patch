@@ -1,0 +1,23 @@
+--- a/drivers/base/property.c	2018-11-21 09:24:18.000000000 +0100
++++ b/drivers/base/property.c	2018-12-15 13:59:16.894896732 +0100
+@@ -19,6 +19,7 @@
+ #include <linux/property.h>
+ #include <linux/etherdevice.h>
+ #include <linux/phy.h>
++#include <linux/of_net.h>
+ 
+ struct property_set {
+ 	struct device *dev;
+@@ -1186,6 +1187,12 @@ void *device_get_mac_address(struct devi
+ {
+ 	char *res;
+ 
++	res = of_get_mac_address(dev->of_node);
++	if (res && (alen >= ETH_ALEN)) {
++		ether_addr_copy(addr, res);
++		return addr;
++	}
++
+ 	res = device_get_mac_addr(dev, "mac-address", addr, alen);
+ 	if (res)
+ 		return res;
