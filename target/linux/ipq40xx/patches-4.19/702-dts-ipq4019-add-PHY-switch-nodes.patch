@@ -3,42 +3,97 @@ From: Christian Lamparter <chunkeey@gmail.com>
 Date: Sun, 20 Nov 2016 02:20:54 +0100
 Subject: [PATCH] dts: ipq4019: add PHY/switch nodes
 
-This patch adds both the "qcom,ess-switch" and "qcom,ess-psgmii"
-nodes which are needed for the ar40xx.c driver to initialize the
+This patch adds both the "qca,qca8337-mmio" and "qcom,ess-psgmii"
+nodes which are needed for the qca8k.c driver to initialize the
 switch.
 
 Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
 ---
- arch/arm/boot/dts/qcom-ipq4019.dtsi | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
 
 --- a/arch/arm/boot/dts/qcom-ipq4019.dtsi
 +++ b/arch/arm/boot/dts/qcom-ipq4019.dtsi
-@@ -594,6 +594,29 @@
+@@ -594,6 +594,86 @@
  			};
  		};
  
-+		ess-switch@c000000 {
-+			compatible = "qcom,ess-switch";
-+			reg = <0xc000000 0x80000>;
-+			switch_access_mode = "local bus";
-+			resets = <&gcc ESS_RESET>;
-+			reset-names = "ess_rst";
-+			clocks = <&gcc GCC_ESS_CLK>;
-+			clock-names = "ess_clk";
-+			switch_cpu_bmp = <0x1>;
-+			switch_lan_bmp = <0x1e>;
-+			switch_wan_bmp = <0x20>;
-+			switch_mac_mode = <0>; /* PORT_WRAPPER_PSGMII */
-+			switch_initvlas = <0x7c 0x54>;
++		psgmii_phy: ess-psgmii@98000 {
++			compatible = "qcom,ess-psgmii", "syscon";
++			reg = <0x98000 0x800>;
++			resets = <&gcc ESS_PSGMII_ARES>;
++			reset-names = "psgmii_rst";
++
 +			status = "disabled";
 +		};
 +
-+		ess-psgmii@98000 {
-+			compatible = "qcom,ess-psgmii";
-+			reg = <0x98000 0x800>;
-+			psgmii_access_mode = "local bus";
++		ess: ess-switch@c000000 {
++			compatible = "qca,qca8337-mmio", "syscon";
++			reg = <0xc000000 0x80000>;
++                       resets = <&gcc ESS_RESET>, <&gcc ESS_MAC1_CLK_DIS>,
++                                <&gcc ESS_MAC2_CLK_DIS>, <&gcc ESS_MAC3_CLK_DIS>,
++                                <&gcc ESS_MAC4_CLK_DIS>, <&gcc ESS_MAC5_CLK_DIS>;
++                       reset-names = "ess_rst", "ess_mac1_clk_dis",
++                               "ess_mac2_clk_dis", "ess_mac3_clk_dis",
++                               "ess_mac4_clk_dis", "ess_mac5_clk_dis";
++			clocks = <&gcc GCC_ESS_CLK>;
++			clock-names = "ess_clk";
++			psgmii-phy = <&psgmii_phy>;
++			syscon = <&portwrapper>;
++			mii = <&mdio>;
++			mac-mode = <0>; /* 0 = PSGMII, 1 = RGMII5 */
++
 +			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				essport0: port@0 { /* MAC0 */
++					reg = <0>;
++					label = "cpu";
++					ethernet = <&gmac>;
++					phy-mode = "internal";
++					fixed-link {
++						speed = <1000>;
++						full-duplex;
++						pause;
++					};
++				};
++
++				essport1: port@1 { /* MAC1 */
++					reg = <1>;
++					label = "lan1";
++					phy-handle = <&ethphy0>;
++				};
++
++				essport2: port@2 {
++					reg = <2>;
++					label = "lan3";
++					phy-handle = <&ethphy1>;
++				};
++
++				essport3: port@3 {
++					reg = <3>;
++					label = "lan2";
++					phy-handle = <&ethphy2>;
++				};
++
++				essport4: port@4 {
++					reg = <4>;
++					label = "lan1";
++					phy-handle = <&ethphy3>;
++				};
++
++				essport5: port@5 { /* MAC5 */
++					reg = <5>;
++					label = "wan";
++					phy-handle = <&ethphy4>;
++				};
++			};
++		};
++
++		portwrapper: portmux@1953000 {
++			compatible = "syscon";
++			reg = <0x1953000 0x1000>;
 +		};
 +
  		usb3_ss_phy: ssphy@9a000 {

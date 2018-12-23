@@ -778,7 +778,11 @@ static int ipqess_tx_map_and_fill(struct ipqess_tx_ring *tx_ring, struct sk_buff
         if (skb->protocol == htons(ETH_P_PPP_SES))
                 word1 |= IPQESS_TPD_PPPOE_EN;
 
-	word3 |= 0x3e << IPQESS_TPD_PORT_BITMAP_SHIFT;
+	if ((skb->dev_scratch > 1) && (skb->dev_scratch < 0x3e)) {
+		word3 |= skb->dev_scratch << IPQESS_TPD_PORT_BITMAP_SHIFT;
+	} else {
+		word3 |= 0x3e << IPQESS_TPD_PORT_BITMAP_SHIFT;
+	}
 	len = skb_headlen(skb);
 
 	first_desc = desc = ipqess_tx_desc_next(tx_ring);
@@ -971,9 +975,10 @@ static int ipqess_hw_init(struct ipqess *ess)
 
 	/* Set Rx FIFO
 	 * - threshold to start to DMA data to host
+	 * (Remove IPQESS_RXQ_CTRL_RMV_VLAN otherwise VLAN won't work)
 	 */
 	ipqess_w32(ess, IPQESS_REG_RXQ_CTRL,
-		 IPQESS_FIFO_THRESH_128_BYTE | IPQESS_RXQ_CTRL_RMV_VLAN);
+		 IPQESS_FIFO_THRESH_128_BYTE /* | IPQESS_RXQ_CTRL_RMV_VLAN */);
 
 	err = ipqess_rx_ring_alloc(ess);
 	if (err)
@@ -1076,7 +1081,7 @@ static int ipqess_axi_probe(struct platform_device *pdev)
 			      NETIF_F_HW_VLAN_CTAG_TX | NETIF_F_SG |
 			      NETIF_F_TSO | NETIF_F_TSO6 |
 			      NETIF_F_GRO;
-	netdev->vlan_features = NETIF_F_HW_CSUM | NETIF_F_SG |
+	netdev->vlan_features = NETIF_F_HW_CSUM | NETIF_F_SG | NETIF_F_RXCSUM |
 				NETIF_F_TSO | NETIF_F_TSO6 |
 				NETIF_F_GRO;
 	netdev->wanted_features = NETIF_F_HW_CSUM | NETIF_F_SG |

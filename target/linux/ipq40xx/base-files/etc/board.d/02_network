@@ -19,39 +19,25 @@ ipq40xx_setup_interfaces()
 	glinet,gl-b1300 |\
 	openmesh,a42|\
 	openmesh,a62)
-		ucidef_add_switch "switch0" \
-			"0@eth0" "3:lan" "4:lan"
+		ucidef_set_interface_lan "lan3 lan4"
 		;;
 	asus,rt-ac58u|\
-	zyxel,nbg6617)
-		ucidef_add_switch "switch0" \
-			"0@eth0" "1:lan:4" "2:lan:3" "3:lan:2" "4:lan:1" "5:wan"
-		;;
+	avm,fritzbox-4040|\
 	linksys,ea6350v3|\
-	avm,fritzbox-4040)
-		ucidef_add_switch "switch0" \
-			"0@eth0" "1:lan" "2:lan" "3:lan" "4:lan" "5:wan"
+	qxwlan,e2600ac-c1|\
+	qxwlan,e2600ac-c2|\
+	zyxel,nbg6617)
+		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3 lan4" "wan"
 		;;
 	avm,fritzbox-7530)
-		ucidef_add_switch "switch0" \
-			"0u@eth0" "1:lan" "2:lan" "3:lan" "4:lan"
-		;;
-	compex,wpj428)
-		ucidef_set_interface_lan "eth0 eth1"
+		ucidef_set_interfaces_lan "lan1 lan2 lan3 lan4"
 		;;
 	engenius,eap1300|\
 	meraki,mr33|\
 	netgear,ex6100v2|\
 	netgear,ex6150v2|\
 	zyxel,wre6606)
-		ucidef_add_switch "switch0" \
-			"0@eth0" "4:lan"
-		;;
-	qxwlan,e2600ac-c1 |\
-	qxwlan,e2600ac-c2)
-		ucidef_set_interfaces_lan_wan "eth0" "eth1"
-		ucidef_add_switch "switch0" \
-			"0u@eth0" "3:lan" "4:lan" "0u@eth1" "5:wan"
+		ucidef_set_interface_lan "lan"
 		;;
 	*)
 		echo "Unsupported hardware. Network interfaces not initialized"
@@ -75,8 +61,8 @@ ipq40xx_setup_macs()
 		;;
 	esac
 
-        [ -n "$lan_mac" ] && ucidef_set_interface_macaddr "lan" $lan_mac
-        [ -n "$wan_mac" ] && ucidef_set_interface_macaddr "wan" $wan_mac
+	[ -n "$lan_mac" ] && ucidef_set_interface_macaddr "lan" $lan_mac
+	[ -n "$wan_mac" ] && ucidef_set_interface_macaddr "wan" $wan_mac
 }
 
 board_config_update

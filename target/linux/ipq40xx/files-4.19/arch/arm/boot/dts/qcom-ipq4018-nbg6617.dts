@@ -31,14 +31,6 @@
 			status = "okay";
 		};
 
-		mdio@90000 {
-			status = "okay";
-		};
-
-		ess-psgmii@98000 {
-			status = "okay";
-		};
-
 		tcsr@1949000 {
 			compatible = "qcom,tcsr";
 			reg = <0x1949000 0x100>;
@@ -49,12 +41,6 @@
 			compatible = "qcom,tcsr";
 			reg = <0x194b000 0x100>;
 			qcom,usb-hsphy-mode-select = <TCSR_USB_HSPHY_HOST_MODE>;
-		};
-
-		ess_tcsr@1953000 {
-			compatible = "qcom,tcsr";
-			reg = <0x1953000 0x1000>;
-			qcom,ess-interface-select = <TCSR_ESS_PSGMII>;
 		};
 
 		tcsr@1957000 {
@@ -102,16 +88,6 @@
 
 		watchdog@b017000 {
 			status = "okay";
-		};
-
-		ess-switch@c000000 {
-			status = "okay";
-		};
-
-		edma@c080000 {
-			status = "okay";
-
-			local-mac-address = [ 00 00 00 00 00 00 ]; /* filled by u-boot */
 		};
 	};
 
@@ -310,6 +286,42 @@
 
 &cryptobam {
 	status = "okay";
+};
+
+&gmac {
+	local-mac-address = [ 00 00 00 00 00 00 ]; /* filled by u-boot */
+};
+
+&mdio {
+	status = "okay";
+};
+
+&psgmii_phy {
+	status = "okay";
+};
+
+&ess {
+	status = "okay";
+};
+
+&gmac {
+	status = "okay";
+};
+
+&essport1 {
+	label = "lan4";
+};
+
+&essport2 {
+	label = "lan3";
+};
+
+&essport3 {
+	label = "lan2";
+};
+
+&essport4 {
+	label = "lan1";
 };
 
 &blsp_dma {
