@@ -18,8 +18,8 @@ Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
  			};
  		};
  
-+		ess-switch@c000000 {
-+			compatible = "qcom,ess-switch";
++		esss: ess-switch@c000000 {
++			compatible = "qcom,ess-switch", "syscon";
 +			reg = <0xc000000 0x80000>;
 +			switch_access_mode = "local bus";
 +			resets = <&gcc ESS_RESET>;
@@ -34,7 +34,7 @@ Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
 +			status = "disabled";
 +		};
 +
-+		ess-psgmii@98000 {
++		essp: ess-psgmii@98000 {
 +			compatible = "qcom,ess-psgmii";
 +			reg = <0x98000 0x800>;
 +			psgmii_access_mode = "local bus";

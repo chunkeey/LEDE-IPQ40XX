@@ -1,0 +1,872 @@
+From 11a8019b0656d203b04bcd2c0867dbf777643e95 Mon Sep 17 00:00:00 2001
+From: John Crispin <john@phrozen.org>
+Date: Wed, 25 Jul 2018 13:39:40 +0200
+Subject: [PATCH] net-next: dsa: qca8k: split out mmio support
+
+Signed-off-by: John Crispin <john@phrozen.org>
+---
+ drivers/net/dsa/Kconfig      |   1 +
+ drivers/net/dsa/Makefile     |   2 +-
+ drivers/net/dsa/qca8k.c      | 181 ++++--------------------------
+ drivers/net/dsa/qca8k.h      |  21 +++-
+ drivers/net/dsa/qca8k_mdio.c | 208 +++++++++++++++++++++++++++++++++++
+ drivers/net/dsa/qca8k_mmio.c | 125 +++++++++++++++++++++
+ include/net/dsa.h            |   1 +
+ net/dsa/Kconfig              |   3 +
+ net/dsa/Makefile             |   1 +
+ net/dsa/dsa.c                |   3 +
+ net/dsa/dsa_priv.h           |   3 +
+ net/dsa/tag_qca_mmio.c       |  76 +++++++++++++
+ 12 files changed, 465 insertions(+), 160 deletions(-)
+ create mode 100644 drivers/net/dsa/qca8k_mdio.c
+ create mode 100644 drivers/net/dsa/qca8k_mmio.c
+ create mode 100644 net/dsa/tag_qca_mmio.c
+
+diff --git a/drivers/net/dsa/Kconfig b/drivers/net/dsa/Kconfig
+index 2b81b97e994f1..c0e9275ce1481 100644
+--- a/drivers/net/dsa/Kconfig
++++ b/drivers/net/dsa/Kconfig
+@@ -47,6 +47,7 @@ config NET_DSA_QCA8K
+ 	tristate "Qualcomm Atheros QCA8K Ethernet switch family support"
+ 	depends on NET_DSA
+ 	select NET_DSA_TAG_QCA
++	select NET_DSA_TAG_QCA_MMIO
+ 	select REGMAP
+ 	---help---
+ 	  This enables support for the Qualcomm Atheros QCA8K Ethernet
+diff --git a/drivers/net/dsa/Makefile b/drivers/net/dsa/Makefile
+index 15c2a831edf19..029cd8cb112a5 100644
+--- a/drivers/net/dsa/Makefile
++++ b/drivers/net/dsa/Makefile
+@@ -7,7 +7,7 @@ obj-$(CONFIG_FIXED_PHY)		+= dsa_loop_bdinfo.o
+ endif
+ obj-$(CONFIG_NET_DSA_MT7530)	+= mt7530.o
+ obj-$(CONFIG_NET_DSA_MV88E6060) += mv88e6060.o
+-obj-$(CONFIG_NET_DSA_QCA8K)	+= qca8k.o
++obj-$(CONFIG_NET_DSA_QCA8K)	+= qca8k.o qca8k_mdio.o qca8k_mmio.o
+ obj-$(CONFIG_NET_DSA_REALTEK_SMI) += realtek.o
+ realtek-objs                    := realtek-smi.o rtl8366.o rtl8366rb.o
+ obj-$(CONFIG_NET_DSA_SMSC_LAN9303) += lan9303-core.o
+diff --git a/drivers/net/dsa/qca8k.c b/drivers/net/dsa/qca8k.c
+index cdcde7f8e0b27..5f2f8ec2872b1 100644
+--- a/drivers/net/dsa/qca8k.c
++++ b/drivers/net/dsa/qca8k.c
+@@ -67,128 +67,22 @@ static const struct qca8k_mib_desc ar8327_mib[] = {
+ 	MIB_DESC(1, 0xa4, "TxLateCol"),
+ };
+ 
+-/* The 32bit switch registers are accessed indirectly. To achieve this we need
+- * to set the page of the register. Track the last page that was set to reduce
+- * mdio writes
+- */
+-static u16 qca8k_current_page = 0xffff;
+-
+-static void
+-qca8k_split_addr(u32 regaddr, u16 *r1, u16 *r2, u16 *page)
+-{
+-	regaddr >>= 1;
+-	*r1 = regaddr & 0x1e;
+-
+-	regaddr >>= 5;
+-	*r2 = regaddr & 0x7;
+-
+-	regaddr >>= 3;
+-	*page = regaddr & 0x3ff;
+-}
+-
+-static u32
+-qca8k_mii_read32(struct mii_bus *bus, int phy_id, u32 regnum)
+-{
+-	u32 val;
+-	int ret;
+-
+-	ret = bus->read(bus, phy_id, regnum);
+-	if (ret >= 0) {
+-		val = ret;
+-		ret = bus->read(bus, phy_id, regnum + 1);
+-		val |= ret << 16;
+-	}
+-
+-	if (ret < 0) {
+-		dev_err_ratelimited(&bus->dev,
+-				    "failed to read qca8k 32bit register\n");
+-		return ret;
+-	}
+-
+-	return val;
+-}
+-
+-static void
+-qca8k_mii_write32(struct mii_bus *bus, int phy_id, u32 regnum, u32 val)
+-{
+-	u16 lo, hi;
+-	int ret;
+-
+-	lo = val & 0xffff;
+-	hi = (u16)(val >> 16);
+-
+-	ret = bus->write(bus, phy_id, regnum, lo);
+-	if (ret >= 0)
+-		ret = bus->write(bus, phy_id, regnum + 1, hi);
+-	if (ret < 0)
+-		dev_err_ratelimited(&bus->dev,
+-				    "failed to write qca8k 32bit register\n");
+-}
+-
+-static void
+-qca8k_set_page(struct mii_bus *bus, u16 page)
+-{
+-	if (page == qca8k_current_page)
+-		return;
+-
+-	if (bus->write(bus, 0x18, 0, page) < 0)
+-		dev_err_ratelimited(&bus->dev,
+-				    "failed to set qca8k page\n");
+-	qca8k_current_page = page;
+-}
+-
+ static u32
+ qca8k_read(struct qca8k_priv *priv, u32 reg)
+ {
+-	u16 r1, r2, page;
+-	u32 val;
+-
+-	qca8k_split_addr(reg, &r1, &r2, &page);
+-
+-	mutex_lock_nested(&priv->bus->mdio_lock, MDIO_MUTEX_NESTED);
+-
+-	qca8k_set_page(priv->bus, page);
+-	val = qca8k_mii_read32(priv->bus, 0x10 | r2, r1);
+-
+-	mutex_unlock(&priv->bus->mdio_lock);
+-
+-	return val;
++	return priv->reg->read(priv, reg);
+ }
+ 
+ static void
+ qca8k_write(struct qca8k_priv *priv, u32 reg, u32 val)
+ {
+-	u16 r1, r2, page;
+-
+-	qca8k_split_addr(reg, &r1, &r2, &page);
+-
+-	mutex_lock_nested(&priv->bus->mdio_lock, MDIO_MUTEX_NESTED);
+-
+-	qca8k_set_page(priv->bus, page);
+-	qca8k_mii_write32(priv->bus, 0x10 | r2, r1, val);
+-
+-	mutex_unlock(&priv->bus->mdio_lock);
++	priv->reg->write(priv, reg, val);
+ }
+ 
+ static u32
+ qca8k_rmw(struct qca8k_priv *priv, u32 reg, u32 mask, u32 val)
+ {
+-	u16 r1, r2, page;
+-	u32 ret;
+-
+-	qca8k_split_addr(reg, &r1, &r2, &page);
+-
+-	mutex_lock_nested(&priv->bus->mdio_lock, MDIO_MUTEX_NESTED);
+-
+-	qca8k_set_page(priv->bus, page);
+-	ret = qca8k_mii_read32(priv->bus, 0x10 | r2, r1);
+-	ret &= ~mask;
+-	ret |= val;
+-	qca8k_mii_write32(priv->bus, 0x10 | r2, r1, ret);
+-
+-	mutex_unlock(&priv->bus->mdio_lock);
+-
+-	return ret;
++	return priv->reg->rmw(priv, reg, mask, val);
+ }
+ 
+ static void
+@@ -232,6 +126,7 @@ static const struct regmap_range qca8k_readable_ranges[] = {
+ 	regmap_reg_range(0x0800, 0x0b70), /* QM */
+ 	regmap_reg_range(0x0c00, 0x0c80), /* PKT */
+ 	regmap_reg_range(0x0e00, 0x0e98), /* L3 */
++#if 0
+ 	regmap_reg_range(0x1000, 0x10ac), /* MIB - Port0 */
+ 	regmap_reg_range(0x1100, 0x11ac), /* MIB - Port1 */
+ 	regmap_reg_range(0x1200, 0x12ac), /* MIB - Port2 */
+@@ -239,7 +134,7 @@ static const struct regmap_range qca8k_readable_ranges[] = {
+ 	regmap_reg_range(0x1400, 0x14ac), /* MIB - Port4 */
+ 	regmap_reg_range(0x1500, 0x15ac), /* MIB - Port5 */
+ 	regmap_reg_range(0x1600, 0x16ac), /* MIB - Port6 */
+-
++#endif
+ };
+ 
+ static const struct regmap_access_table qca8k_readable_table = {
+@@ -500,6 +395,8 @@ qca8k_setup(struct dsa_switch *ds)
+ 
+ 	/* Initialize CPU port pad mode (xMII type, delays...) */
+ 	phy_mode = of_get_phy_mode(ds->ports[QCA8K_CPU_PORT].dn);
++//	if (!phy_mode)
++//		phy_mode = of_get_phy_mode(netdev->dev.of_node);
+ 	if (phy_mode < 0) {
+ 		pr_err("Can't find phy-mode for master device\n");
+ 		return phy_mode;
+@@ -521,9 +418,9 @@ qca8k_setup(struct dsa_switch *ds)
+ 	qca8k_mib_init(priv);
+ 
+ 	/* Enable QCA header mode on the cpu port */
+-	qca8k_write(priv, QCA8K_REG_PORT_HDR_CTRL(QCA8K_CPU_PORT),
+-		    QCA8K_PORT_HDR_CTRL_ALL << QCA8K_PORT_HDR_CTRL_TX_S |
+-		    QCA8K_PORT_HDR_CTRL_ALL << QCA8K_PORT_HDR_CTRL_RX_S);
++	qca8k_write(priv, QCA8K_REG_PORT_HDR_CTRL(QCA8K_CPU_PORT), 0);
++//		    QCA8K_PORT_HDR_CTRL_ALL << QCA8K_PORT_HDR_CTRL_TX_S |
++//		    QCA8K_PORT_HDR_CTRL_ALL << QCA8K_PORT_HDR_CTRL_RX_S);
+ 
+ 	/* Disable forwarding by default on all ports */
+ 	for (i = 0; i < QCA8K_NUM_PORTS; i++)
+@@ -868,7 +765,9 @@ qca8k_port_fdb_dump(struct dsa_switch *ds, int port,
+ static enum dsa_tag_protocol
+ qca8k_get_tag_protocol(struct dsa_switch *ds, int port)
+ {
+-	return DSA_TAG_PROTO_QCA;
++	struct qca8k_priv *priv = (struct qca8k_priv *)ds->priv;
++
++	return priv->tag_protocol;
+ }
+ 
+ static const struct dsa_switch_ops qca8k_switch_ops = {
+@@ -892,51 +791,42 @@ static const struct dsa_switch_ops qca8k_switch_ops = {
+ 	.port_fdb_dump		= qca8k_port_fdb_dump,
+ };
+ 
+-static int
+-qca8k_sw_probe(struct mdio_device *mdiodev)
++int
++qca8k_sw_probe(struct qca8k_priv *priv)
+ {
+-	struct qca8k_priv *priv;
+ 	u32 id;
+ 
+-	/* allocate the private data struct so that we can probe the switches
+-	 * ID register
+-	 */
+-	priv = devm_kzalloc(&mdiodev->dev, sizeof(*priv), GFP_KERNEL);
+-	if (!priv)
+-		return -ENOMEM;
+-
+-	priv->bus = mdiodev->bus;
+-	priv->dev = &mdiodev->dev;
+ 
+ 	/* read the switches ID register */
+ 	id = qca8k_read(priv, QCA8K_REG_MASK_CTRL);
+ 	id >>= QCA8K_MASK_CTRL_ID_S;
+ 	id &= QCA8K_MASK_CTRL_ID_M;
+-	if (id != QCA8K_ID_QCA8337)
++	if (id != QCA8K_ID_QCA8337 && id != QCA8K_ID_QCA8337_2)
+ 		return -ENODEV;
+ 
+-	priv->ds = dsa_switch_alloc(&mdiodev->dev, DSA_MAX_PORTS);
++	priv->ds = dsa_switch_alloc(priv->dev, DSA_MAX_PORTS);
+ 	if (!priv->ds)
+ 		return -ENOMEM;
+ 
+ 	priv->ds->priv = priv;
+ 	priv->ds->ops = &qca8k_switch_ops;
+ 	mutex_init(&priv->reg_mutex);
+-	dev_set_drvdata(&mdiodev->dev, priv);
++	dev_set_drvdata(priv->dev, priv);
+ 
+ 	return dsa_register_switch(priv->ds);
+ }
+ 
+-static void
+-qca8k_sw_remove(struct mdio_device *mdiodev)
++int
++qca8k_sw_remove(struct qca8k_priv *priv)
+ {
+-	struct qca8k_priv *priv = dev_get_drvdata(&mdiodev->dev);
+ 	int i;
+ 
+ 	for (i = 0; i < QCA8K_NUM_PORTS; i++)
+ 		qca8k_port_set_status(priv, i, 0);
+ 
+ 	dsa_unregister_switch(priv->ds);
++
++	return 0;
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -974,28 +864,5 @@ static int qca8k_resume(struct device *dev)
+ }
+ #endif /* CONFIG_PM_SLEEP */
+ 
+-static SIMPLE_DEV_PM_OPS(qca8k_pm_ops,
+-			 qca8k_suspend, qca8k_resume);
+-
+-static const struct of_device_id qca8k_of_match[] = {
+-	{ .compatible = "qca,qca8334" },
+-	{ .compatible = "qca,qca8337" },
+-	{ /* sentinel */ },
+-};
+-
+-static struct mdio_driver qca8kmdio_driver = {
+-	.probe  = qca8k_sw_probe,
+-	.remove = qca8k_sw_remove,
+-	.mdiodrv.driver = {
+-		.name = "qca8k",
+-		.of_match_table = qca8k_of_match,
+-		.pm = &qca8k_pm_ops,
+-	},
+-};
+-
+-mdio_module_driver(qca8kmdio_driver);
+-
+-MODULE_AUTHOR("Mathieu Olivari, John Crispin <john@phrozen.org>");
+-MODULE_DESCRIPTION("Driver for QCA8K ethernet switch family");
+-MODULE_LICENSE("GPL v2");
+-MODULE_ALIAS("platform:qca8k");
++SIMPLE_DEV_PM_OPS(qca8k_pm_ops,
++		  qca8k_suspend, qca8k_resume);
+diff --git a/drivers/net/dsa/qca8k.h b/drivers/net/dsa/qca8k.h
+index 613fe5c50236c..7379adb491b9c 100644
+--- a/drivers/net/dsa/qca8k.h
++++ b/drivers/net/dsa/qca8k.h
+@@ -23,6 +23,7 @@
+ 
+ #define PHY_ID_QCA8337					0x004dd036
+ #define QCA8K_ID_QCA8337				0x13
++#define QCA8K_ID_QCA8337_2				0x14
+ 
+ #define QCA8K_NUM_FDB_RECORDS				2048
+ 
+@@ -81,8 +82,8 @@
+ #define   QCA8K_PORT_VLAN_CVID(x)			(x << 16)
+ #define   QCA8K_PORT_VLAN_SVID(x)			x
+ #define QCA8K_REG_PORT_VLAN_CTRL1(_i)			(0x424 + (_i * 8))
+-#define QCA8K_REG_IPV4_PRI_BASE_ADDR			0x470
+-#define QCA8K_REG_IPV4_PRI_ADDR_MASK			0x474
++#define QCA8K_REG_IPV4_PRI_BASE_ADDR			0x484
++#define QCA8K_REG_IPV4_PRI_ADDR_MASK			0x488
+ 
+ /* Lookup registers */
+ #define QCA8K_REG_ATU_DATA0				0x600
+@@ -161,6 +162,14 @@ struct ar8xxx_port_status {
+ 	int enabled;
+ };
+ 
++struct qca8k_priv;
++
++struct qca8k_reg_ops {
++	u32 (*read)(struct qca8k_priv *priv, u32 reg);
++	void (*write)(struct qca8k_priv *priv, u32 reg, u32 val);
++	u32 (*rmw)(struct qca8k_priv *priv, u32 reg, u32 mask, u32 val);
++};
++
+ struct qca8k_priv {
+ 	struct regmap *regmap;
+ 	struct mii_bus *bus;
+@@ -168,6 +177,10 @@ struct qca8k_priv {
+ 	struct dsa_switch *ds;
+ 	struct mutex reg_mutex;
+ 	struct device *dev;
++	enum dsa_tag_protocol tag_protocol;
++	struct qca8k_reg_ops *reg;
++	struct regmap *base;
++	spinlock_t reg_lock;
+ };
+ 
+ struct qca8k_mib_desc {
+@@ -183,4 +196,8 @@ struct qca8k_fdb {
+ 	u8 mac[6];
+ };
+ 
++extern const struct dev_pm_ops qca8k_pm_ops;
++extern int qca8k_sw_probe(struct qca8k_priv *priv);
++extern int qca8k_sw_remove(struct qca8k_priv *priv);
++
+ #endif /* __QCA8K_H */
+diff --git a/drivers/net/dsa/qca8k_mdio.c b/drivers/net/dsa/qca8k_mdio.c
+new file mode 100644
+index 0000000000000..5a473759be005
+--- /dev/null
++++ b/drivers/net/dsa/qca8k_mdio.c
+@@ -0,0 +1,208 @@
++/*
++ * Copyright (C) 2009 Felix Fietkau <nbd@nbd.name>
++ * Copyright (C) 2011-2012 Gabor Juhos <juhosg@openwrt.org>
++ * Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ * Copyright (c) 2016 John Crispin <john@phrozen.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/phy.h>
++#include <linux/netdevice.h>
++#include <net/dsa.h>
++#include <net/switchdev.h>
++#include <linux/of_net.h>
++#include <linux/of_platform.h>
++#include <linux/if_bridge.h>
++#include <linux/mdio.h>
++#include <linux/etherdevice.h>
++
++#include "qca8k.h"
++
++/* The 32bit switch registers are accessed indirectly. To achieve this we need
++ * to set the page of the register. Track the last page that was set to reduce
++ * mdio writes
++ */
++static u16 qca8k_current_page = 0xffff;
++
++static void
++qca8k_split_addr(u32 regaddr, u16 *r1, u16 *r2, u16 *page)
++{
++	regaddr >>= 1;
++	*r1 = regaddr & 0x1e;
++
++	regaddr >>= 5;
++	*r2 = regaddr & 0x7;
++
++	regaddr >>= 3;
++	*page = regaddr & 0x3ff;
++}
++
++static u32
++qca8k_mii_read32(struct mii_bus *bus, int phy_id, u32 regnum)
++{
++	u32 val;
++	int ret;
++
++	ret = bus->read(bus, phy_id, regnum);
++	if (ret >= 0) {
++		val = ret;
++		ret = bus->read(bus, phy_id, regnum + 1);
++		val |= ret << 16;
++	}
++
++	if (ret < 0) {
++		dev_err_ratelimited(&bus->dev,
++				    "failed to read qca8k 32bit register\n");
++		return ret;
++	}
++
++	return val;
++}
++
++static void
++qca8k_mii_write32(struct mii_bus *bus, int phy_id, u32 regnum, u32 val)
++{
++	u16 lo, hi;
++	int ret;
++
++	lo = val & 0xffff;
++	hi = (u16)(val >> 16);
++
++	ret = bus->write(bus, phy_id, regnum, lo);
++	if (ret >= 0)
++		ret = bus->write(bus, phy_id, regnum + 1, hi);
++	if (ret < 0)
++		dev_err_ratelimited(&bus->dev,
++				    "failed to write qca8k 32bit register\n");
++}
++
++static void
++qca8k_set_page(struct mii_bus *bus, u16 page)
++{
++	if (page == qca8k_current_page)
++		return;
++
++	if (bus->write(bus, 0x18, 0, page) < 0)
++		dev_err_ratelimited(&bus->dev,
++				    "failed to set qca8k page\n");
++	qca8k_current_page = page;
++}
++
++static u32
++qca8k_mdio_read(struct qca8k_priv *priv, u32 reg)
++{
++	u16 r1, r2, page;
++	u32 val;
++
++	qca8k_split_addr(reg, &r1, &r2, &page);
++
++	mutex_lock_nested(&priv->bus->mdio_lock, MDIO_MUTEX_NESTED);
++
++	qca8k_set_page(priv->bus, page);
++	val = qca8k_mii_read32(priv->bus, 0x10 | r2, r1);
++
++	mutex_unlock(&priv->bus->mdio_lock);
++
++	return val;
++}
++
++static void
++qca8k_mdio_write(struct qca8k_priv *priv, u32 reg, u32 val)
++{
++	u16 r1, r2, page;
++
++	qca8k_split_addr(reg, &r1, &r2, &page);
++
++	mutex_lock_nested(&priv->bus->mdio_lock, MDIO_MUTEX_NESTED);
++
++	qca8k_set_page(priv->bus, page);
++	qca8k_mii_write32(priv->bus, 0x10 | r2, r1, val);
++
++	mutex_unlock(&priv->bus->mdio_lock);
++}
++
++static u32
++qca8k_mdio_rmw(struct qca8k_priv *priv, u32 reg, u32 mask, u32 val)
++{
++	u16 r1, r2, page;
++	u32 ret;
++
++	qca8k_split_addr(reg, &r1, &r2, &page);
++
++	mutex_lock_nested(&priv->bus->mdio_lock, MDIO_MUTEX_NESTED);
++
++	qca8k_set_page(priv->bus, page);
++	ret = qca8k_mii_read32(priv->bus, 0x10 | r2, r1);
++	ret &= ~mask;
++	ret |= val;
++	qca8k_mii_write32(priv->bus, 0x10 | r2, r1, ret);
++
++	mutex_unlock(&priv->bus->mdio_lock);
++
++	return ret;
++}
++
++static struct qca8k_reg_ops qca8k_mdio_reg_ops = {
++	.read = qca8k_mdio_read,
++	.write = qca8k_mdio_write,
++	.rmw = qca8k_mdio_rmw,
++};
++
++static int
++qca8k_mdio_sw_probe(struct mdio_device *mdiodev)
++{
++	struct qca8k_priv *priv;
++
++	/* allocate the private data struct so that we can probe the switches
++	 * ID register
++	 */
++	priv = devm_kzalloc(&mdiodev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->bus = mdiodev->bus;
++	priv->dev = &mdiodev->dev;
++	priv->reg = &qca8k_mdio_reg_ops;
++	priv->tag_protocol = DSA_TAG_PROTO_QCA;
++
++	return qca8k_sw_probe(priv);
++}
++
++static void
++qca8k_mdio_sw_remove(struct mdio_device *mdiodev)
++{
++	struct qca8k_priv *priv = dev_get_drvdata(&mdiodev->dev);
++
++	qca8k_sw_remove(priv);
++}
++
++static const struct of_device_id qca8k_of_match[] = {
++	{ .compatible = "qca,qca8337" },
++	{ /* sentinel */ },
++};
++
++static struct mdio_driver qca8kmdio_driver = {
++	.probe  = qca8k_mdio_sw_probe,
++	.remove = qca8k_mdio_sw_remove,
++	.mdiodrv.driver = {
++		.name = "qca8k",
++		.of_match_table = qca8k_of_match,
++		.pm = &qca8k_pm_ops,
++	},
++};
++
++mdio_module_driver(qca8kmdio_driver);
++
++MODULE_AUTHOR("Mathieu Olivari, John Crispin <john@phrozen.org>");
++MODULE_DESCRIPTION("Driver for QCA8K ethernet switch family");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:qca8k");
+diff --git a/drivers/net/dsa/qca8k_mmio.c b/drivers/net/dsa/qca8k_mmio.c
+new file mode 100644
+index 0000000000000..16c3c4560696a
+--- /dev/null
++++ b/drivers/net/dsa/qca8k_mmio.c
+@@ -0,0 +1,125 @@
++/*
++ * Copyright (c) 2017 John Crispin <john@phrozen.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/module.h>
++#include <linux/phy.h>
++#include <linux/netdevice.h>
++#include <net/dsa.h>
++#include <net/switchdev.h>
++#include <linux/mfd/syscon.h>
++#include <linux/of_mdio.h>
++#include <linux/of_net.h>
++#include <linux/of_platform.h>
++#include <linux/if_bridge.h>
++#include <linux/etherdevice.h>
++
++#include "qca8k.h"
++
++static u32
++qca8k_mmio_read(struct qca8k_priv *priv, u32 reg)
++{
++	u32 val;
++
++	regmap_read(priv->base, reg, &val);
++
++	return val;
++}
++
++static void
++qca8k_mmio_write(struct qca8k_priv *priv, u32 reg, u32 val)
++{
++	regmap_write(priv->base, reg, val);
++}
++
++static u32
++qca8k_mmio_rmw(struct qca8k_priv *priv, u32 reg, u32 mask, u32 val)
++{
++	u32 _val = qca8k_mmio_read(priv, reg);
++
++	_val &= ~mask;
++	_val |= val;
++
++	qca8k_mmio_write(priv, reg, _val);
++	return _val;
++}
++
++static struct qca8k_reg_ops qca8k_mmio_reg_ops = {
++	.read = qca8k_mmio_read,
++	.write = qca8k_mmio_write,
++	.rmw = qca8k_mmio_rmw,
++};
++
++static int
++qca8k_sw_probe_mmio(struct platform_device *pdev)
++{
++	struct qca8k_priv *priv;
++	struct device_node *mdio, *base;
++
++	/* allocate the private data struct so that we can probe the switches
++	 * ID register
++	 */
++	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	base = of_parse_phandle(pdev->dev.of_node, "switch", 0);
++	if (!base)
++		return -EINVAL;
++
++	priv->base = syscon_node_to_regmap(base);
++	if (IS_ERR(priv->base))
++		return PTR_ERR(priv->base);
++
++	spin_lock_init(&priv->reg_lock);
++	priv->dev = &pdev->dev;
++	priv->reg = &qca8k_mmio_reg_ops;
++	priv->tag_protocol = DSA_TAG_PROTO_QCA_MMIO;
++	mdio = of_parse_phandle(pdev->dev.of_node, "dsa,mii-bus", 0);
++	if (!mdio)
++		return -EINVAL;
++	priv->bus = of_mdio_find_bus(mdio);
++	if (!priv->bus)
++		return -EPROBE_DEFER;
++
++	return qca8k_sw_probe(priv);
++}
++
++static int
++qca8k_sw_remove_mmio(struct platform_device *pdev)
++{
++	struct qca8k_priv *priv = dev_get_drvdata(&pdev->dev);
++
++	return qca8k_sw_remove(priv);
++}
++
++static const struct of_device_id qca8k_of_match[] = {
++	{ .compatible = "qca,qca8337-mmio" },
++	{ /* sentinel */ },
++};
++
++static struct platform_driver qca8k_mmio_driver = {
++	.probe  = qca8k_sw_probe_mmio,
++	.remove = qca8k_sw_remove_mmio,
++	.driver = {
++		.name = "qca8k-mmio",
++		.of_match_table = qca8k_of_match,
++		.pm = &qca8k_pm_ops,
++	},
++};
++
++module_platform_driver(qca8k_mmio_driver);
++
++MODULE_AUTHOR("John Crispin <john@phrozen.org>");
++MODULE_DESCRIPTION("Driver for QCA8K ethernet switch family");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:qca8k-mmio");
+diff --git a/include/net/dsa.h b/include/net/dsa.h
+index fdbd6082945d6..4c99d2467ddc5 100644
+--- a/include/net/dsa.h
++++ b/include/net/dsa.h
+@@ -39,6 +39,7 @@ enum dsa_tag_protocol {
+ 	DSA_TAG_PROTO_LAN9303,
+ 	DSA_TAG_PROTO_MTK,
+ 	DSA_TAG_PROTO_QCA,
++	DSA_TAG_PROTO_QCA_MMIO,
+ 	DSA_TAG_PROTO_TRAILER,
+ 	DSA_TAG_LAST,		/* MUST BE LAST */
+ };
+diff --git a/net/dsa/Kconfig b/net/dsa/Kconfig
+index 4183e4ba27a50..a2f3720af9cfa 100644
+--- a/net/dsa/Kconfig
++++ b/net/dsa/Kconfig
+@@ -53,4 +53,7 @@ config NET_DSA_TAG_TRAILER
+ config NET_DSA_TAG_QCA
+ 	bool
+ 
++config NET_DSA_TAG_QCA_MMIO
++	bool
++
+ endif
+diff --git a/net/dsa/Makefile b/net/dsa/Makefile
+index 9e4d3536f977e..235babf72ced4 100644
+--- a/net/dsa/Makefile
++++ b/net/dsa/Makefile
+@@ -13,4 +13,5 @@ dsa_core-$(CONFIG_NET_DSA_TAG_KSZ) += tag_ksz.o
+ dsa_core-$(CONFIG_NET_DSA_TAG_LAN9303) += tag_lan9303.o
+ dsa_core-$(CONFIG_NET_DSA_TAG_MTK) += tag_mtk.o
+ dsa_core-$(CONFIG_NET_DSA_TAG_QCA) += tag_qca.o
++dsa_core-$(CONFIG_NET_DSA_TAG_QCA_MMIO) += tag_qca_mmio.o
+ dsa_core-$(CONFIG_NET_DSA_TAG_TRAILER) += tag_trailer.o
+diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+index e63c554e0623e..0f8c61ef00271 100644
+--- a/net/dsa/dsa.c
++++ b/net/dsa/dsa.c
+@@ -68,6 +68,9 @@ const struct dsa_device_ops *dsa_device_ops[DSA_TAG_LAST] = {
+ #endif
+ #ifdef CONFIG_NET_DSA_TAG_TRAILER
+ 	[DSA_TAG_PROTO_TRAILER] = &trailer_netdev_ops,
++#endif
++#ifdef CONFIG_NET_DSA_TAG_QCA_MMIO
++	[DSA_TAG_PROTO_QCA_MMIO] = &qca_mmio_netdev_ops,
+ #endif
+ 	[DSA_TAG_PROTO_NONE] = &none_ops,
+ };
+diff --git a/net/dsa/dsa_priv.h b/net/dsa/dsa_priv.h
+index 3964c6f7a7c0d..ec7ee531b6c59 100644
+--- a/net/dsa/dsa_priv.h
++++ b/net/dsa/dsa_priv.h
+@@ -220,4 +220,7 @@ extern const struct dsa_device_ops qca_netdev_ops;
+ /* tag_trailer.c */
+ extern const struct dsa_device_ops trailer_netdev_ops;
+ 
++/* tag_qca_mmio.c */
++extern const struct dsa_device_ops qca_mmio_netdev_ops;
++
+ #endif
+diff --git a/net/dsa/tag_qca_mmio.c b/net/dsa/tag_qca_mmio.c
+new file mode 100644
+index 0000000000000..9930424af4e54
+--- /dev/null
++++ b/net/dsa/tag_qca_mmio.c
+@@ -0,0 +1,76 @@
++/*
++ * Copyright (c) 2015, The Linux Foundation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
++
++#include <linux/etherdevice.h>
++#include "dsa_priv.h"
++
++#define QCA_HDR_LEN	2
++#define QCA_HDR_VERSION	0x2
++
++#define QCA_HDR_RECV_VERSION_MASK	GENMASK(15, 14)
++#define QCA_HDR_RECV_VERSION_S		14
++#define QCA_HDR_RECV_PRIORITY_MASK	GENMASK(13, 11)
++#define QCA_HDR_RECV_PRIORITY_S		11
++#define QCA_HDR_RECV_TYPE_MASK		GENMASK(10, 6)
++#define QCA_HDR_RECV_TYPE_S		6
++#define QCA_HDR_RECV_FRAME_IS_TAGGED	BIT(3)
++#define QCA_HDR_RECV_SOURCE_PORT_MASK	GENMASK(2, 0)
++
++#define QCA_HDR_XMIT_VERSION_MASK	GENMASK(15, 14)
++#define QCA_HDR_XMIT_VERSION_S		14
++#define QCA_HDR_XMIT_PRIORITY_MASK	GENMASK(13, 11)
++#define QCA_HDR_XMIT_PRIORITY_S		11
++#define QCA_HDR_XMIT_CONTROL_MASK	GENMASK(10, 8)
++#define QCA_HDR_XMIT_CONTROL_S		8
++#define QCA_HDR_XMIT_FROM_CPU		BIT(7)
++#define QCA_HDR_XMIT_DP_BIT_MASK	GENMASK(6, 0)
++
++static struct sk_buff *qca_tag_xmit(struct sk_buff *skb, struct net_device *dev)
++{
++	struct dsa_port *dp = dsa_slave_to_port(dev);
++
++	dev->stats.tx_packets++;
++	dev->stats.tx_bytes += skb->len;
++
++	if (skb_cow_head(skb, 0) < 0)
++		goto out_free;
++
++	skb_push(skb, 2);
++
++	*skb->data = BIT(dp->index);
++
++	return skb;
++
++out_free:
++	kfree_skb(skb);
++	return NULL;
++}
++
++static struct sk_buff *qca_tag_rcv(struct sk_buff *skb, struct net_device *dev,
++				   struct packet_type *pt)
++{
++	int port;
++
++	port = (skb->data[3 - 16] >> 4) & 0xf;
++
++	skb->dev = dsa_master_find_slave(dev, 0, port);
++	if (!skb->dev)
++		return NULL;
++
++	return skb;
++}
++
++const struct dsa_device_ops qca_mmio_netdev_ops = {
++	.xmit	= qca_tag_xmit,
++	.rcv	= qca_tag_rcv,
++};
