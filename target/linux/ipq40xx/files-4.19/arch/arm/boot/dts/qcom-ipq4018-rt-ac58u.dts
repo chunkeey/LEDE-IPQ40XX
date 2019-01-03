@@ -31,7 +31,14 @@
 
 			switch = <&esss>;
 			dsa,mii-bus = <&mdio>;
+			qca,psgmii = <&psgmii>;
+			qca,mac-mode = <0>; /* PSGMII */
 			status = "okay";
+
+			resets = <&gcc ESS_RESET>;
+			reset-names = "ess_rst";
+			clocks = <&gcc GCC_ESS_CLK>;
+			clock-names = "ess_clk";
 
 			ports {
 				#address-cells = <1>;
@@ -41,35 +48,34 @@
 					reg = <0>;
 					label = "cpu";
 					ethernet = <&gmac>;
-					phy-mode = "sgmii";
+					phy-mode = "internal";
 					fixed-link {
 						speed = <1000>;
 						full-duplex;
-						pause;
 					};
 				};
 
 				port@1 {
 					reg = <1>;
-					label = "lan1";
+					label = "lan4";
 					phy-handle = <&phy_port1>;
 				};
 
 				port@2 {
 					reg = <2>;
-					label = "lan2";
+					label = "lan3";
 					phy-handle = <&phy_port2>;
 				};
 
 				port@3 {
 					reg = <3>;
-					label = "lan3";
+					label = "lan2";
 					phy-handle = <&phy_port3>;
 				};
 
 				port@4 {
 					reg = <4>;
-					label = "lan4";
+					label = "lan1";
 					phy-handle = <&phy_port4>;
 				};
 

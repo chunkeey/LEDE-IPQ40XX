@@ -14,14 +14,13 @@ Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
 
 --- a/arch/arm/boot/dts/qcom-ipq4019.dtsi
 +++ b/arch/arm/boot/dts/qcom-ipq4019.dtsi
-@@ -594,6 +594,29 @@
+@@ -594,6 +594,27 @@
  			};
  		};
  
 +		esss: ess-switch@c000000 {
 +			compatible = "qcom,ess-switch", "syscon";
 +			reg = <0xc000000 0x80000>;
-+			switch_access_mode = "local bus";
 +			resets = <&gcc ESS_RESET>;
 +			reset-names = "ess_rst";
 +			clocks = <&gcc GCC_ESS_CLK>;
@@ -34,10 +33,9 @@ Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
 +			status = "disabled";
 +		};
 +
-+		essp: ess-psgmii@98000 {
-+			compatible = "qcom,ess-psgmii";
++		psgmii: ess-psgmii@98000 {
++			compatible = "qcom,ess-psgmii", "syscon";
 +			reg = <0x98000 0x800>;
-+			psgmii_access_mode = "local bus";
 +			status = "disabled";
 +		};
 +
