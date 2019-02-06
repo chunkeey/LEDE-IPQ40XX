@@ -52,7 +52,7 @@ define Device/tl-wdr4900-v1
   TPLINK_HWID := 0x49000001
   TPLINK_HWREV := 1
   TPLINK_FLASHLAYOUT := 16Mppc
-  KERNEL_NAME := cuImage.tl-wdr4900-v1
+  KERNEL_NAME := simpleImage.tl-wdr4900-v1
   KERNEL_INITRAMFS :=
   SUPPORTED_DEVICES:=tl-wdr4900-v1 tplink,tl-wdr4900-v1
   IMAGES := fdt.bin factory.bin sysupgrade.bin

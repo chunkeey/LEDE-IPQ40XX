@@ -1,218 +1,526 @@
-/*
- * TP-Link TL-WDR4900 v1 Device Tree Source
- *
- * Copyright 2013 Gabor Juhos <juhosg@openwrt.org>
- *
- * This program is free software; you can redistribute  it and/or modify it
- * under  the terms of  the GNU General  Public License as published by the
- * Free Software Foundation;  either version 2 of the  License, or (at your
- * option) any later version.
- */
-
-/include/ "fsl/p1010si-pre.dtsi"
+/dts-v1/;
 
 / {
-	model = "TP-Link TL-WDR4900 v1";
 	compatible = "tplink,tl-wdr4900-v1";
+	#address-cells = < 0x02 >;
+	#size-cells = < 0x02 >;
+	interrupt-parent = < 0x01 >;
+	model = "TP-Link TL-WDR4900 v1";
 
-	chosen {
-		bootargs = "console=ttyS0,115200";
-/*
-		stdout-path = "/soc@ffe00000/serial@4500";
-*/
+	cpus {
+		power-isa-version = "2.03";
+		power-isa-b;
+		power-isa-e;
+		power-isa-atb;
+		power-isa-cs;
+		power-isa-e.le;
+		power-isa-e.pm;
+		power-isa-ecl;
+		power-isa-mmc;
+		power-isa-sp;
+		power-isa-sp.fd;
+		power-isa-sp.fs;
+		power-isa-sp.fv;
+		mmu-type = "power-embedded";
+		#address-cells = < 0x01 >;
+		#size-cells = < 0x00 >;
+
+		PowerPC,P1010@0 {
+			bus-frequency = < 0x17d783fc >;
+			timebase-frequency = < 0x2faf07f >;
+			clock-frequency = < 0x2faf07f8 >;
+			device_type = "cpu";
+			reg = < 0x00 >;
+			next-level-cache = < 0x02 >;
+		};
 	};
 
 	aliases {
-		spi0 = &spi0;
-		led-boot = &system_green;
-		led-failsafe = &system_green;
-		led-running = &system_green;
-		led-upgrade = &system_green;
+		serial0 = "/soc@ffe00000/serial@4500";
+		serial1 = "/soc@ffe00000/serial@4600";
+		ethernet0 = "/soc@ffe00000/ethernet@b0000";
+		ethernet1 = "/soc@ffe00000/ethernet@b1000";
+		ethernet2 = "/soc@ffe00000/ethernet@b2000";
+		pci0 = "/pcie@ffe09000";
+		pci1 = "/pcie@ffe0a000";
+		can0 = "/soc@ffe00000/can@1c000";
+		can1 = "/soc@ffe00000/can@1d000";
+		spi0 = "/soc@ffe00000/spi@7000";
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
 	};
 
 	memory {
+		reg = < 0x00 0x00 0x00 0x8000000 >;
 		device_type = "memory";
 	};
 
-	soc: soc@ffe00000 {
-		ranges = <0x0 0x0 0xffe00000 0x100000>;
+	soc@ffe00000 {
+		ranges = < 0x00 0x00 0xffe00000 0x100000 >;
+		#address-cells = < 0x01 >;
+		#size-cells = < 0x01 >;
+		device_type = "soc";
+		compatible = "fsl,p1010-immr", "simple-bus";
+		bus-frequency = < 0x17d783fc >;
 
-		spi0: spi@7000 {
+		spi@7000 {
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			compatible = "fsl,mpc8536-espi";
+			reg = < 0x7000 0x1000 >;
+			interrupts = < 0x3b 0x02 0x00 0x00 >;
+			fsl,espi-num-chipselects = < 0x01 >;
+
 			flash@0 {
+				#address-cells = < 0x01 >;
+				#size-cells = < 0x01 >;
 				compatible = "jedec,spi-nor";
-				reg = <0>;
-				spi-max-frequency = <25000000>;
+				reg = < 0x00 >;
+				spi-max-frequency = < 0x17d7840 >;
 
-				partitions {
-					compatible = "fixed-partitions";
-					#address-cells = <1>;
-					#size-cells = <1>;
+				u-boot@0 {
+					reg = < 0x00 0x50000 >;
+					label = "u-boot";
+					read-only;
+				};
 
-					partition@0 {
-						reg = <0x0 0x0050000>;
-						label = "u-boot";
-						read-only;
-					};
+				dtb@50000 {
+					reg = < 0x50000 0x10000 >;
+					label = "dtb";
+					read-only;
+				};
 
-					partition@50000 {
-						reg = <0x00050000 0x00010000>;
-						label = "dtb";
-						read-only;
-					};
+				kernel@60000 {
+					reg = < 0x60000 0x2a0000 >;
+					label = "kernel";
+				};
 
-					partition@60000 {
-						compatible = "tplink,firmware";
-						reg = <0x00060000 0x00f80000>;
-						label = "firmware";
-					};
+				rootfs@300000 {
+					reg = < 0x300000 0xce0000 >;
+					label = "rootfs";
+				};
 
-					config: partition@fe0000 {
-						reg = <0x00fe0000 0x00010000>;
-						label = "config";
-						read-only;
-					};
+				config@fe0000 {
+					reg = < 0xfe0000 0x10000 >;
+					label = "config";
+					read-only;
+					linux,phandle = < 0x04 >;
+					phandle = < 0x04 >;
+				};
 
-					partition@ff0000 {
-						reg = <0x00ff0000 0x00010000>;
-						label = "caldata";
-						read-only;
-					};
+				caldata@ff0000 {
+					reg = < 0xff0000 0x10000 >;
+					label = "caldata";
+					read-only;
+				};
+
+				firmware@60000 {
+					reg = < 0x60000 0xf80000 >;
+					label = "firmware";
 				};
 			};
 		};
 
-		gpio0: gpio-controller@fc00 {
+		gpio-controller@fc00 {
+			#gpio-cells = < 0x02 >;
+			compatible = "fsl,pq3-gpio";
+			reg = < 0xfc00 0x100 >;
+			interrupts = < 0x2f 0x02 0x00 0x00 >;
+			gpio-controller;
+			linux,phandle = < 0x05 >;
+			phandle = < 0x05 >;
 		};
 
 		usb@22000 {
 			phy_type = "utmi";
 			dr_mode = "host";
+			compatible = "fsl-usb2-dr-v1.6", "fsl-usb2-dr";
+			reg = < 0x22000 0x1000 >;
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			interrupts = < 0x1c 0x02 0x00 0x00 >;
 		};
 
 		mdio@24000 {
-			phy0: ethernet-phy@0 {
-				reg = <0x0>;
-				qca,ar8327-initvals = <
-					0x00004 0x07600000 /* PAD0_MODE */
-					0x00008 0x00000000 /* PAD5_MODE */
-					0x0000c 0x01000000 /* PAD6_MODE */
-					0x00010 0x40000000 /* POWER_ON_STRIP */
-					0x00050 0xcf35cf35 /* LED_CTRL0 */
-					0x00054 0xcf35cf35 /* LED_CTRL1 */
-					0x00058 0xcf35cf35 /* LED_CTRL2 */
-					0x0005c 0x03ffff00 /* LED_CTRL3 */
-					0x0007c 0x0000007e /* PORT0_STATUS */
-					0x00094 0x00000200 /* PORT6_STATUS */
-				>;
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			compatible = "fsl,etsec2-mdio";
+			reg = < 0x24000 0x1000 0xb0030 0x04 >;
+
+			ethernet-phy@0 {
+				reg = < 0x00 >;
+				qca,ar8327-initvals = < 0x04 0x7600000 0x08 0x00 0x0c 0x1000000 0x10 0x40000000 0x50 0xcf35cf35 0x54 0xcf35cf35 0x58 0xcf35cf35 0x5c 0x3ffff00 0x7c 0x7e 0x94 0x200 >;
+				linux,phandle = < 0x03 >;
+				phandle = < 0x03 >;
 			};
 		};
 
 		mdio@25000 {
 			status = "disabled";
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			compatible = "fsl,etsec2-tbi";
+			reg = < 0x25000 0x1000 0xb1030 0x04 >;
 		};
 
 		mdio@26000 {
 			status = "disabled";
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			compatible = "fsl,etsec2-tbi";
+			reg = < 0x26000 0x1000 0xb1030 0x04 >;
 		};
 
-		enet0: ethernet@b0000 {
-			phy-handle = <&phy0>;
+		ethernet@b0000 {
+			phy-handle = < 0x03 >;
 			phy-connection-type = "rgmii-id";
-			mtd-mac-address = <&config 0x144>;
+			mtd-mac-address = < 0x04 0x144 >;
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x01 >;
+			device_type = "network";
+			model = "eTSEC";
+			compatible = "fsl,etsec2";
+			fsl,num_rx_queues = < 0x08 >;
+			fsl,num_tx_queues = < 0x08 >;
+			fsl,magic-packet;
+			local-mac-address = [ 00 00 00 00 00 00 ]; /* editted */
+			ranges;
+
+			queue-group@b0000 {
+				#address-cells = < 0x01 >;
+				#size-cells = < 0x01 >;
+				reg = < 0xb0000 0x1000 >;
+				interrupts = < 0x1d 0x02 0x00 0x00 0x1e 0x02 0x00 0x00 0x22 0x02 0x00 0x00 >;
+				fsl,rx-bit-map = < 0xff >;
+				fsl,tx-bit-map = < 0xff >;
+			};
 		};
 
-		enet1: ethernet@b1000 {
+		ethernet@b1000 {
 			status = "disabled";
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x01 >;
+			device_type = "network";
+			model = "eTSEC";
+			compatible = "fsl,etsec2";
+			fsl,num_rx_queues = < 0x08 >;
+			fsl,num_tx_queues = < 0x08 >;
+			fsl,magic-packet;
+			local-mac-address = [ 00 00 00 00 00 00 ];
+			ranges;
+
+			queue-group@b1000 {
+				#address-cells = < 0x01 >;
+				#size-cells = < 0x01 >;
+				reg = < 0xb1000 0x1000 >;
+				interrupts = < 0x23 0x02 0x00 0x00 0x24 0x02 0x00 0x00 0x28 0x02 0x00 0x00 >;
+				fsl,rx-bit-map = < 0xff >;
+				fsl,tx-bit-map = < 0xff >;
+			};
 		};
 
-		enet2: ethernet@b2000 {
+		ethernet@b2000 {
 			status = "disabled";
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x01 >;
+			device_type = "network";
+			model = "eTSEC";
+			compatible = "fsl,etsec2";
+			fsl,num_rx_queues = < 0x08 >;
+			fsl,num_tx_queues = < 0x08 >;
+			fsl,magic-packet;
+			local-mac-address = [ 00 00 00 00 00 00 ];
+			ranges;
+
+			queue-group@b2000 {
+				#address-cells = < 0x01 >;
+				#size-cells = < 0x01 >;
+				reg = < 0xb2000 0x1000 >;
+				interrupts = < 0x1f 0x02 0x00 0x00 0x20 0x02 0x00 0x00 0x21 0x02 0x00 0x00 >;
+				fsl,rx-bit-map = < 0xff >;
+				fsl,tx-bit-map = < 0xff >;
+			};
 		};
 
 		sdhc@2e000 {
 			status = "disabled";
+			compatible = "fsl,p1010-esdhc", "fsl,esdhc";
+			reg = < 0x2e000 0x1000 >;
+			interrupts = < 0x48 0x02 0x00 0x00 >;
+			clock-frequency = < 0x00 >;
+			sdhci,auto-cmd12;
 		};
 
-		serial1: serial@4600 {
+		serial@4600 {
 			status = "disabled";
+			cell-index = < 0x01 >;
+			device_type = "serial";
+			compatible = "fsl,ns16550", "ns16550";
+			reg = < 0x4600 0x100 >;
+			clock-frequency = < 0x17d783fc >;
+			interrupts = < 0x2a 0x02 0x00 0x00 >;
 		};
 
-		can0: can@1c000 {
+		can@1c000 {
 			status = "disabled";
+			compatible = "fsl,p1010-flexcan";
+			reg = < 0x1c000 0x1000 >;
+			interrupts = < 0x30 0x02 0x00 0x00 >;
 		};
 
-		can1: can@1d000 {
+		can@1d000 {
 			status = "disabled";
+			compatible = "fsl,p1010-flexcan";
+			reg = < 0x1d000 0x1000 >;
+			interrupts = < 0x3d 0x02 0x00 0x00 >;
 		};
 
 		ptp_clock@b0e00 {
 			compatible = "fsl,etsec-ptp";
-			reg = <0xb0e00 0xb0>;
-			interrupts = <68 2 0 0 69 2 0 0 70 2 0 0>;
-			fsl,cksel       = <1>;
-			fsl,tclk-period	= <5>;
-			fsl,tmr-prsc	= <2>;
-			fsl,tmr-add	= <0xcccccccd>;
-			fsl,tmr-fiper1	= <0x3b9ac9fb>; /* 1PPS */
-			fsl,tmr-fiper2	= <0x00018696>;
-			fsl,max-adj	= <249999999>;
+			reg = < 0xb0e00 0xb0 >;
+			interrupts = < 0x44 0x02 0x00 0x00 0x45 0x02 0x00 0x00 0x46 0x02 0x00 0x00 >;
+			fsl,cksel = < 0x01 >;
+			fsl,tclk-period = < 0x05 >;
+			fsl,tmr-prsc = < 0x02 >;
+			fsl,tmr-add = < 0xcccccccd >;
+			fsl,tmr-fiper1 = < 0x3b9ac9fb >;
+			fsl,tmr-fiper2 = < 0x18696 >;
+			fsl,max-adj = < 0xee6b27f >;
+		};
+
+		ecm-law@0 {
+			compatible = "fsl,ecm-law";
+			reg = < 0x00 0x1000 >;
+			fsl,num-laws = < 0x0c >;
+		};
+
+		ecm@1000 {
+			compatible = "fsl,p1010-ecm", "fsl,ecm";
+			reg = < 0x1000 0x1000 >;
+			interrupts = < 0x10 0x02 0x00 0x00 >;
+		};
+
+		memory-controller@2000 {
+			compatible = "fsl,p1010-memory-controller";
+			reg = < 0x2000 0x1000 >;
+			interrupts = < 0x10 0x02 0x00 0x00 >;
+		};
+
+		i2c@3000 {
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			cell-index = < 0x00 >;
+			compatible = "fsl-i2c";
+			reg = < 0x3000 0x100 >;
+			interrupts = < 0x2b 0x02 0x00 0x00 >;
+			dfsrr;
+		};
+
+		i2c@3100 {
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x00 >;
+			cell-index = < 0x01 >;
+			compatible = "fsl-i2c";
+			reg = < 0x3100 0x100 >;
+			interrupts = < 0x2b 0x02 0x00 0x00 >;
+			dfsrr;
+		};
+
+		serial@4500 {
+			cell-index = < 0x00 >;
+			device_type = "serial";
+			compatible = "fsl,ns16550", "ns16550";
+			reg = < 0x4500 0x100 >;
+			clock-frequency = < 0x17d783fc >;
+			interrupts = < 0x2a 0x02 0x00 0x00 >;
+		};
+
+		sata@18000 {
+			compatible = "fsl,pq-sata-v2";
+			reg = < 0x18000 0x1000 >;
+			cell-index = < 0x01 >;
+			interrupts = < 0x4a 0x02 0x00 0x00 >;
+		};
+
+		sata@19000 {
+			compatible = "fsl,pq-sata-v2";
+			reg = < 0x19000 0x1000 >;
+			cell-index = < 0x02 >;
+			interrupts = < 0x29 0x02 0x00 0x00 >;
+		};
+
+		l2-cache-controller@20000 {
+			compatible = "fsl,p1010-l2-cache-controller", "fsl,p1014-l2-cache-controller";
+			reg = < 0x20000 0x1000 >;
+			cache-line-size = < 0x20 >;
+			cache-size = < 0x40000 >;
+			interrupts = < 0x10 0x02 0x00 0x00 >;
+			linux,phandle = < 0x02 >;
+			phandle = < 0x02 >;
+		};
+
+		dma@21300 {
+			#address-cells = < 0x01 >;
+			#size-cells = < 0x01 >;
+			compatible = "fsl,eloplus-dma";
+			reg = < 0x21300 0x04 >;
+			ranges = < 0x00 0x21100 0x200 >;
+			cell-index = < 0x00 >;
+
+			dma-channel@0 {
+				compatible = "fsl,eloplus-dma-channel";
+				reg = < 0x00 0x80 >;
+				cell-index = < 0x00 >;
+				interrupts = < 0x14 0x02 0x00 0x00 >;
+			};
+
+			dma-channel@80 {
+				compatible = "fsl,eloplus-dma-channel";
+				reg = < 0x80 0x80 >;
+				cell-index = < 0x01 >;
+				interrupts = < 0x15 0x02 0x00 0x00 >;
+			};
+
+			dma-channel@100 {
+				compatible = "fsl,eloplus-dma-channel";
+				reg = < 0x100 0x80 >;
+				cell-index = < 0x02 >;
+				interrupts = < 0x16 0x02 0x00 0x00 >;
+			};
+
+			dma-channel@180 {
+				compatible = "fsl,eloplus-dma-channel";
+				reg = < 0x180 0x80 >;
+				cell-index = < 0x03 >;
+				interrupts = < 0x17 0x02 0x00 0x00 >;
+			};
+		};
+
+		pic@40000 {
+			clock-frequency = < 0x17d783fc >;
+			interrupt-controller;
+			#address-cells = < 0x00 >;
+			#interrupt-cells = < 0x04 >;
+			reg = < 0x40000 0x40000 >;
+			compatible = "fsl,mpic";
+			device_type = "open-pic";
+			big-endian;
+			single-cpu-affinity;
+			last-interrupt-source = < 0xff >;
+			linux,phandle = < 0x01 >;
+			phandle = < 0x01 >;
+		};
+
+		timer@41100 {
+			compatible = "fsl,mpic-global-timer";
+			reg = < 0x41100 0x100 0x41300 0x04 >;
+			interrupts = < 0x00 0x00 0x03 0x00 0x01 0x00 0x03 0x00 0x02 0x00 0x03 0x00 0x03 0x00 0x03 0x00 >;
+		};
+
+		message@41400 {
+			compatible = "fsl,mpic-v3.1-msgr";
+			reg = < 0x41400 0x200 >;
+			interrupts = < 0xb0 0x02 0x00 0x00 0xb1 0x02 0x00 0x00 0xb2 0x02 0x00 0x00 0xb3 0x02 0x00 0x00 >;
+		};
+
+		msi@41600 {
+			compatible = "fsl,mpic-msi";
+			reg = < 0x41600 0x80 >;
+			msi-available-ranges = < 0x00 0x100 >;
+			interrupts = < 0xe0 0x00 0x00 0x00 0xe1 0x00 0x00 0x00 0xe2 0x00 0x00 0x00 0xe3 0x00 0x00 0x00 0xe4 0x00 0x00 0x00 0xe5 0x00 0x00 0x00 0xe6 0x00 0x00 0x00 0xe7 0x00 0x00 0x00 >;
+		};
+
+		timer@42100 {
+			compatible = "fsl,mpic-global-timer";
+			reg = < 0x42100 0x100 0x42300 0x04 >;
+			interrupts = < 0x04 0x00 0x03 0x00 0x05 0x00 0x03 0x00 0x06 0x00 0x03 0x00 0x07 0x00 0x03 0x00 >;
+		};
+
+		global-utilities@e0000 {
+			compatible = "fsl,p1010-guts";
+			reg = < 0xe0000 0x1000 >;
+			fsl,has-rstcr;
 		};
 	};
 
-	pci0: pcie@ffe09000 {
-		reg = <0 0xffe09000 0 0x1000>;
-		ranges = <0x2000000 0x0 0xa0000000 0 0xa0000000 0x0 0x20000000
-			  0x1000000 0x0 0x00000000 0 0xffc10000 0x0 0x10000>;
+	pcie@ffe09000 {
+		reg = < 0x00 0xffe09000 0x00 0x1000 >;
+		ranges = < 0x2000000 0x00 0xa0000000 0x00 0xa0000000 0x00 0x20000000 0x1000000 0x00 0x00 0x00 0xffc10000 0x00 0x10000 >;
+		compatible = "fsl,p1010-pcie", "fsl,qoriq-pcie-v2.3";
+		device_type = "pci";
+		#size-cells = < 0x02 >;
+		#address-cells = < 0x03 >;
+		bus-range = < 0x00 0xff >;
+		clock-frequency = < 0x1fca055 >;
+		interrupts = < 0x10 0x02 0x00 0x00 >;
+
 		pcie@0 {
-			ranges = <0x2000000 0x0 0xa0000000
-				  0x2000000 0x0 0xa0000000
-				  0x0 0x20000000
-
-				  0x1000000 0x0 0x0
-				  0x1000000 0x0 0x0
-				  0x0 0x100000>;
+			ranges = < 0x2000000 0x00 0xa0000000 0x2000000 0x00 0xa0000000 0x00 0x20000000 0x1000000 0x00 0x00 0x1000000 0x00 0x00 0x00 0x100000 >;
+			reg = < 0x00 0x00 0x00 0x00 0x00 >;
+			#interrupt-cells = < 0x01 >;
+			#size-cells = < 0x02 >;
+			#address-cells = < 0x03 >;
+			device_type = "pci";
+			interrupts = < 0x10 0x02 0x00 0x00 >;
+			interrupt-map-mask = < 0xf800 0x00 0x00 0x07 >;
+			interrupt-map = < 0x00 0x00 0x00 0x01 0x01 0x04 0x01 0x00 0x00 0x00 0x00 0x00 0x02 0x01 0x05 0x01 0x00 0x00 0x00 0x00 0x00 0x03 0x01 0x06 0x01 0x00 0x00 0x00 0x00 0x00 0x04 0x01 0x07 0x01 0x00 0x00 >;
 		};
 	};
 
-	pci1: pcie@ffe0a000 {
-		reg = <0 0xffe0a000 0 0x1000>;
-		ranges = <0x2000000 0x0 0x80000000 0 0x80000000 0x0 0x20000000
-			  0x1000000 0x0 0x00000000 0 0xffc00000 0x0 0x10000>;
+	pcie@ffe0a000 {
+		reg = < 0x00 0xffe0a000 0x00 0x1000 >;
+		ranges = < 0x2000000 0x00 0x80000000 0x00 0x80000000 0x00 0x20000000 0x1000000 0x00 0x00 0x00 0xffc00000 0x00 0x10000 >;
+		compatible = "fsl,p1010-pcie", "fsl,qoriq-pcie-v2.3";
+		device_type = "pci";
+		#size-cells = < 0x02 >;
+		#address-cells = < 0x03 >;
+		bus-range = < 0x00 0xff >;
+		clock-frequency = < 0x1fca055 >;
+		interrupts = < 0x10 0x02 0x00 0x00 >;
+
 		pcie@0 {
-			ranges = <0x2000000 0x0 0x80000000
-				  0x2000000 0x0 0x80000000
-				  0x0 0x20000000
-
-				  0x1000000 0x0 0x0
-				  0x1000000 0x0 0x0
-				  0x0 0x100000>;
+			ranges = < 0x2000000 0x00 0x80000000 0x2000000 0x00 0x80000000 0x00 0x20000000 0x1000000 0x00 0x00 0x1000000 0x00 0x00 0x00 0x100000 >;
+			reg = < 0x00 0x00 0x00 0x00 0x00 >;
+			#interrupt-cells = < 0x01 >;
+			#size-cells = < 0x02 >;
+			#address-cells = < 0x03 >;
+			device_type = "pci";
+			interrupts = < 0x10 0x02 0x00 0x00 >;
+			interrupt-map-mask = < 0xf800 0x00 0x00 0x07 >;
+			interrupt-map = < 0x00 0x00 0x00 0x01 0x01 0x00 0x01 0x00 0x00 0x00 0x00 0x00 0x02 0x01 0x01 0x01 0x00 0x00 0x00 0x00 0x00 0x03 0x01 0x02 0x01 0x00 0x00 0x00 0x00 0x00 0x04 0x01 0x03 0x01 0x00 0x00 >;
 		};
 	};
 
-	ifc: ifc@ffe1e000 {
+	ifc@ffe1e000 {
 		status = "disabled";
+		#address-cells = < 0x02 >;
+		#size-cells = < 0x01 >;
+		compatible = "fsl,ifc", "simple-bus";
+		interrupts = < 0x10 0x02 0x00 0x00 0x13 0x02 0x00 0x00 >;
 	};
 
 	leds {
 		compatible = "gpio-leds";
 
-		system_green: system {
-			gpios = <&gpio0 2 1>; /* active low */
+		system {
+			gpios = < 0x05 0x02 0x01 >;
 			label = "tp-link:blue:system";
 		};
 
 		usb1 {
-			gpios = <&gpio0 3 1>; /* active low */
+			gpios = < 0x05 0x03 0x01 >;
 			label = "tp-link:green:usb1";
 		};
 
 		usb2 {
-			gpios = <&gpio0 4 1>; /* active low */
+			gpios = < 0x05 0x04 0x01 >;
 			label = "tp-link:green:usb2";
 		};
 
 		usbpower {
-			gpios = <&gpio0 10 1>; /* active low */
+			gpios = < 0x05 0x0a 0x01 >;
 			label = "tp-link:usb:power";
 		};
 	};
@@ -222,40 +530,14 @@
 
 		reset {
 			label = "Reset button";
-			gpios = <&gpio0 5 1>; /* active low */
-			linux,code = <0x198>; /* KEY_RESTART */
+			gpios = < 0x05 0x05 0x01 >;
+			linux,code = < 0x198 >;
 		};
 
 		rfkill {
 			label = "RFKILL switch";
-			gpios = <&gpio0 11 1>; /* active low */
-			linux,code = <0xf7>; /* RFKill */
+			gpios = < 0x05 0x0b 0x01 >;
+			linux,code = < 0xf7 >;
 		};
-	};
-};
-
-/include/ "fsl/p1010si-post.dtsi"
-
-/*
- * The TL-WDR4900 v1 uses the NXP (Freescale) P1014 SoC which is closely
- * related to the P1010.
- *
- * NXP QP1010FS.pdf "QorIQ P1010 and P1014 Communications Processors"
- * datasheet states that the P1014 does not include the accelerated crypto
- * module (CAAM/SEC4) which is present in the P1010.
- *
- * NXP Appliation Note AN4938 Rev. 2 implies that some P1014 may contain the
- * SEC4 module, but states that SoCs with System Version Register values
- * 0x80F10110 or 0x80F10120 do not have the security feature.
- *
- * All v1.3 TL-WDR4900 tested have SVR == 0x80F10110 which AN4938 describes
- * as: core rev 1.0, "P1014 (without security)".
- *
- * The SVR value is reported by uboot on the serial console.
- */
-
-/ {
-	soc: soc@ffe00000 {
-		/delete-node/ crypto@30000; /* Pulled in by p1010si-post */
 	};
 };
