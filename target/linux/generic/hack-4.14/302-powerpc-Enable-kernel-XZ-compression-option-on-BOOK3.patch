@@ -1,0 +1,37 @@
+From 26064848efbca49c643d1237dc1f8215515d52ee Mon Sep 17 00:00:00 2001
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+Date: Tue, 19 Jun 2018 23:52:30 +0300
+Subject: [PATCH] powerpc: Enable kernel XZ compression option on BOOK3S_32
+
+Enable kernel XZ compression option on BOOK3S_32. Tested on G4
+PowerBook.
+
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+[mpe: Use one select under the PPC symbol guarded by if PPC_BOOK3S]
+Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+[added PPC_85xx too]
+---
+
+--- a/arch/powerpc/Kconfig
++++ b/arch/powerpc/Kconfig
+@@ -199,6 +199,7 @@ config PPC
+ 	select HAVE_IOREMAP_PROT
+ 	select HAVE_IRQ_EXIT_ON_IRQ_STACK
+ 	select HAVE_KERNEL_GZIP
++	select HAVE_KERNEL_XZ			if PPC_BOOK3S || PPC_85xx
+ 	select HAVE_KPROBES
+ 	select HAVE_KPROBES_ON_FTRACE
+ 	select HAVE_KRETPROBES
+--- a/arch/powerpc/platforms/Kconfig.cputype
++++ b/arch/powerpc/platforms/Kconfig.cputype
+@@ -75,7 +75,6 @@ config PPC_BOOK3S_64
+ 	select HAVE_ARCH_TRANSPARENT_HUGEPAGE
+ 	select ARCH_SUPPORTS_NUMA_BALANCING
+ 	select IRQ_WORK
+-	select HAVE_KERNEL_XZ
+ 
+ config PPC_BOOK3E_64
+ 	bool "Embedded processors"
+-- 
+2.20.1
+
