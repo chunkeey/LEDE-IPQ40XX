@@ -20,6 +20,12 @@ define Device/FitImage
 	KERNEL_NAME := Image
 endef
 
+define Device/FitImageNone
+	KERNEL_SUFFIX := -fit-uImage.itb
+	KERNEL = kernel-bin | fit none $$(DTS_DIR)/$$(DEVICE_DTS).dtb
+	KERNEL_NAME := Image
+endef
+
 define Device/FitImageLzma
 	KERNEL_SUFFIX := -fit-uImage.itb
 	KERNEL = kernel-bin | lzma | fit lzma $$(DTS_DIR)/$$(DEVICE_DTS).dtb
@@ -87,7 +93,7 @@ endef
 TARGET_DEVICES += asus_map-ac2200
 
 define Device/asus_rt-ac58u
-	$(call Device/FitImageLzma)
+	$(call Device/FitImage)
 	DEVICE_DTS := qcom-ipq4018-rt-ac58u
 	BLOCKSIZE := 128k
 	PAGESIZE := 2048

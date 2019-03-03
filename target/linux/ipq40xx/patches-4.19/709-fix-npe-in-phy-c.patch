@@ -1,0 +1,20 @@
+--- a/drivers/net/phy/phy.c
++++ b/drivers/net/phy/phy.c
+@@ -982,13 +982,15 @@ EXPORT_SYMBOL(phy_start);
+ 
+ static void phy_link_up(struct phy_device *phydev)
+ {
+-	phydev->phy_link_change(phydev, true, true);
++	if (phydev->phy_link_change)
++		phydev->phy_link_change(phydev, true, true);
+ 	phy_led_trigger_change_speed(phydev);
+ }
+ 
+ static void phy_link_down(struct phy_device *phydev, bool do_carrier)
+ {
+-	phydev->phy_link_change(phydev, false, do_carrier);
++	if (phydev->phy_link_change)
++		phydev->phy_link_change(phydev, false, do_carrier);
+ 	phy_led_trigger_change_speed(phydev);
+ }
+ 
