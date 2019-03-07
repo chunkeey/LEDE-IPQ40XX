@@ -67,19 +67,19 @@ Signed-off-by: Christian Lamparter <chunkeey@gmail.com>
 +
 +				essport2: port@2 {
 +					reg = <2>;
-+					label = "lan3";
++					label = "lan2";
 +					phy-handle = <&ethphy1>;
 +				};
 +
 +				essport3: port@3 {
 +					reg = <3>;
-+					label = "lan2";
++					label = "lan3";
 +					phy-handle = <&ethphy2>;
 +				};
 +
 +				essport4: port@4 {
 +					reg = <4>;
-+					label = "lan1";
++					label = "lan4";
 +					phy-handle = <&ethphy3>;
 +				};
 +
